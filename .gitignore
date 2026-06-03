@@ -132,7 +132,7 @@ data/
 logs/
 
 # Model weights (too large for git; use Git LFS or cloud storage)
-*.pth
+#*.pth
 *.pt
 *.onnx
 
