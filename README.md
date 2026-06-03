@@ -1,180 +1,454 @@
-# 🫁 X-ray Lung Disease Classifier
+# 🫁 Chest X-Ray Pneumonia Detection System
 
-> Deep learning–based pneumonia detection from chest X-ray images using transfer learning (ResNet18).
+<div align="center">
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white)
-![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red?logo=pytorch&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-REST%20API-green?logo=fastapi&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-Containerized-blue?logo=docker&logoColor=white)
-![AWS](https://img.shields.io/badge/AWS-Cloud%20Deployment-orange?logo=amazonaws&logoColor=white)
-![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-black?logo=githubactions&logoColor=white)
+### AI-Powered Medical Image Classification Using Deep Learning
+
+![Python](https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python)
+![PyTorch](https://img.shields.io/badge/PyTorch-Deep%20Learning-red?style=for-the-badge&logo=pytorch)
+![FastAPI](https://img.shields.io/badge/FastAPI-REST%20API-green?style=for-the-badge&logo=fastapi)
+![Docker](https://img.shields.io/badge/Docker-Containerized-blue?style=for-the-badge&logo=docker)
+![AWS](https://img.shields.io/badge/AWS-Cloud-orange?style=for-the-badge&logo=amazonaws)
+
+</div>
 
 ---
 
-## Problem Statement
+# 📖 Overview
 
-Pneumonia is a lung infection that can be life-threatening if not detected early. Chest X-ray imaging is one of the most widely used diagnostic tools. This project builds an end-to-end deep learning API that classifies chest X-ray images as **Pneumonia** or **Normal**.
+This project is an end-to-end AI-powered medical image analysis system designed to detect **Pneumonia** from Chest X-Ray images using **Transfer Learning with ResNet18**.
 
-## Solution
+The system provides:
 
-| Feature | Details |
+- Deep Learning-based diagnosis
+- FastAPI REST API
+- Dockerized deployment
+- Explainable AI (Grad-CAM)
+- Automated ML pipeline
+- AWS deployment readiness
+
+---
+
+# 🎯 Problem Statement
+
+Pneumonia is a severe respiratory infection affecting millions of people worldwide.
+
+Manual diagnosis through chest radiographs:
+
+- Requires expert radiologists
+- Time consuming
+- Subject to human variability
+- Difficult in resource-constrained areas
+
+This project aims to assist healthcare professionals by providing rapid AI-assisted screening.
+
+---
+
+# 🚀 Features
+
+| Feature | Status |
+|----------|----------|
+| Pneumonia Detection | ✅ |
+| ResNet18 Transfer Learning | ✅ |
+| FastAPI Backend | ✅ |
+| Docker Deployment | ✅ |
+| Grad-CAM Explainability | ✅ |
+| PDF Report Generation | ✅ |
+| CI/CD Pipeline | ✅ |
+| AWS Deployment Support | ✅ |
+
+---
+
+# 🏗 System Architecture
+
+```text
+                User
+                  │
+                  ▼
+        Upload Chest X-Ray
+                  │
+                  ▼
+              FastAPI
+                  │
+                  ▼
+         Image Processing
+                  │
+                  ▼
+          ResNet18 Model
+                  │
+                  ▼
+          Prediction
+                  │
+                  ▼
+       Confidence Score
+```
+
+---
+
+# 🔬 Machine Learning Pipeline
+
+```text
+Data Collection
+      │
+      ▼
+Data Validation
+      │
+      ▼
+Data Transformation
+      │
+      ▼
+Image Augmentation
+      │
+      ▼
+Model Training
+      │
+      ▼
+Evaluation
+      │
+      ▼
+Model Deployment
+```
+
+---
+
+# 🏆 Model Performance
+
+| Metric | Value |
+|----------|----------|
+| Accuracy | 92.79% |
+| ROC-AUC | 0.9923 |
+| F1 Score | 0.9197 |
+| Precision | 0.9466 |
+| Recall | 0.9047 |
+
+---
+
+# 📊 Model Performance Visualizations
+
+The following visualizations provide a comprehensive overview of the model's performance and learning behavior.
+
+---
+
+## 📈 Performance Metrics
+
+<p align="center">
+  <img src="assets/performance_metrics.png" width="800">
+</p>
+
+### Performance Summary
+
+| Metric | Score |
 |---------|---------|
-| **Model** | ResNet18 (transfer learning, ImageNet pre-trained) |
-| **Framework** | PyTorch |
-| **API** | FastAPI (REST) + Streamlit (interactive UI) |
-| **Training** | Early stopping, LR scheduling, gradient clipping |
-| **Evaluation** | Accuracy, Precision, Recall, F1-Score, Confusion Matrix |
-| **Deployment** | Docker + AWS ECR + GitHub Actions CI/CD |
+| Accuracy | 92.79% |
+| Precision | 94.66% |
+| Recall | 90.47% |
+| F1 Score | 91.97% |
+| ROC-AUC | 0.9923 |
 
-## Model Architecture
+---
 
-- **Backbone**: ResNet18 pre-trained on ImageNet (11.2M parameters)
-- **Classification Head**: Dropout → FC(512→256) → ReLU → Dropout → FC(256→2)
-- **Loss Function**: CrossEntropyLoss (raw logit output)
-- **Optimizer**: SGD with momentum + weight decay
-- **Scheduler**: StepLR with early stopping (patience=5)
+## 📈 Training vs Validation Accuracy
 
-## Project Structure
+<p align="center">
+  <img src="assets/training_validation_accuracy.png" width="850">
+</p>
 
-```
-├── app.py                          # FastAPI REST API
-├── streamlit_app.py                # Streamlit interactive UI
-├── train.py                        # Training entry point
-├── evaluate.py                     # Standalone model evaluation script
-├── Dockerfile                      # Multi-stage production Docker build
-├── requirements.txt                # Pinned dependencies
-│
-├── xray/                           # Main package
-│   ├── components/                 # Pipeline components
-│   │   ├── data_ingestion.py       #   Local data validation and extraction
-│   │   ├── data_transformation.py  #   Augmentation, normalization, DataLoaders
-│   │   ├── model_training.py       #   Training loop with early stopping
-│   │   └── model_evaluation.py     #   Comprehensive metrics
-│   │
-│   ├── constant/
-│   │   └── training_pipeline/
-│   │       └── __init__.py         # All hyperparameters & constants
-│   │
-│   ├── entity/
-│   │   ├── config_entity.py        # Stage configurations
-│   │   └── artifacts_entity.py     # Stage output contracts
-│   │
-│   ├── ml/model/
-│   │   └── arch.py                 # XRayClassifier (ResNet-18)
-│   │
-│   ├── pipeline/
-│   │   └── train_pipeline.py       # End-to-end orchestrator
-│   │
-│   ├── exception.py                # Custom exception with traceback
-│   └── logger.py                   # File + console logging
-│
-├── scripts/
-│   └── start_up.sh                 # EC2 provisioning script
-│
-└── .github/workflows/
-    └── main.yml                    # CI/CD pipeline
+### Insights
+
+- Training accuracy consistently improves during training.
+- Validation accuracy closely follows training accuracy.
+- Minimal overfitting observed.
+- Stable convergence achieved through transfer learning.
+
+---
+
+## 🎯 Confusion Matrix
+
+<p align="center">
+  <img src="assets/confusion_matrix.png" width="700">
+</p>
+
+### Interpretation
+
+| Result | Meaning |
+|----------|----------|
+| True Positive | Pneumonia correctly identified |
+| True Negative | Normal correctly identified |
+| False Positive | Normal classified as Pneumonia |
+| False Negative | Pneumonia classified as Normal |
+
+The confusion matrix demonstrates strong classification capability with a high number of correctly classified chest X-ray images.
+
+---
+
+## 📉 ROC Curve
+
+<p align="center">
+  <img src="assets/roc_curve.png" width="700">
+</p>
+
+### ROC-AUC Score
+
+```text
+ROC-AUC = 0.9923
 ```
 
-## Quick Start
+### Insights
 
-### 1. Clone & Setup
+- Excellent class separability.
+- Very low false positive rate.
+- High sensitivity for pneumonia detection.
+- Near-perfect diagnostic performance.
+
+---
+
+## 🏆 Performance Conclusion
+
+The model achieves strong performance across all major evaluation metrics and demonstrates excellent capability in distinguishing Pneumonia from Normal chest X-ray images.
+
+✅ Accuracy: 92.79%
+
+✅ ROC-AUC: 0.9923
+
+✅ F1 Score: 0.9197
+
+✅ Strong Generalization
+
+✅ Reliable Classification Performance
+
+---
+# 📂 Project Structure
 
 ```bash
-git clone <repo-url>
-cd lung-disease-diagnosis-main
+.
+├── app.py
+├── streamlit_app.py
+├── train.py
+├── evaluate.py
+├── Dockerfile
+├── requirements.txt
+│
+├── utils/
+│   ├── model_utils.py
+│   ├── gradcam.py
+│   ├── pdf_report.py
+│   └── logger.py
+│
+├── xray/
+│   ├── components/
+│   ├── pipeline/
+│   ├── ml/
+│   ├── entity/
+│   └── constant/
+│
+├── scripts/
+│
+└── .github/
+```
 
-# Create virtual environment
+---
+
+# 🧠 Model Architecture
+
+### Backbone
+
+- ResNet18 (ImageNet Pretrained)
+
+### Classification Head
+
+```python
+Dropout
+↓
+Linear(512 → 256)
+↓
+ReLU
+↓
+Dropout
+↓
+Linear(256 → 2)
+```
+
+### Classes
+
+| Label | Class |
+|---------|---------|
+| 0 | NORMAL |
+| 1 | PNEUMONIA |
+
+---
+
+# ⚙️ Installation
+
+## Clone Repository
+
+```bash
+git clone https://github.com/yourusername/chest-xray-pneumonia-detection.git
+cd chest-xray-pneumonia-detection
+```
+
+## Create Virtual Environment
+
+```bash
 python -m venv venv
-source venv/bin/activate   # Linux/Mac
-venv\Scripts\activate      # Windows
+```
 
-# Install dependencies
+### Windows
+
+```bash
+venv\Scripts\activate
+```
+
+### Linux/Mac
+
+```bash
+source venv/bin/activate
+```
+
+## Install Dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-### 2. Set Environment Variables
+---
 
-```bash
-export AWS_ACCESS_KEY_ID=<your-key>
-export AWS_SECRET_ACCESS_KEY=<your-secret>
-export AWS_DEFAULT_REGION=us-east-1
-export AWS_ACCOUNT_ID=<your-account-id>
-```
-
-### 3. Train the Model
+# 🏋️ Training
 
 ```bash
 python train.py
 ```
 
-### 4. Run the API Server
+---
+
+# 📊 Evaluation
+
+```bash
+python evaluate.py
+```
+
+---
+
+# 🚀 Run FastAPI
 
 ```bash
 uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
-Then visit `http://localhost:8000/docs` for interactive API documentation.
+Swagger UI:
 
-### 5. Run Streamlit UI
-
-```bash
-streamlit run streamlit_app.py
+```text
+http://localhost:8000/docs
 ```
 
-### 6. Docker Deployment
+---
 
-```bash
-docker build -t xray-classifier .
-docker run -p 8000:8000 xray-classifier
+# 🌐 API Endpoints
+
+## Health Check
+
+```http
+GET /health
 ```
 
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/` | Health check |
-| `GET` | `/health` | Detailed health status |
-| `POST` | `/predict` | Upload X-ray image → get prediction |
-
-### Example Response
+### Response
 
 ```json
 {
-  "prediction_index": 1,
-  "prediction_label": "PNEUMONIA",
-  "confidence": 0.9723,
-  "probabilities": {
-    "NORMAL": 0.0277,
-    "PNEUMONIA": 0.9723
-  }
+  "status": "healthy",
+  "model_loaded": true,
+  "device": "cuda"
 }
 ```
 
-## Tech Stack
+---
 
-| Component | Technology |
-|-----------|------------|
-| Language | Python 3.10+ |
-| Deep Learning | PyTorch 2.0+ |
-| Model | ResNet18 (Transfer Learning) |
-| API | FastAPI |
-| Interactive UI | Streamlit |
+## Prediction Endpoint
+
+```http
+POST /predict
+```
+
+### Response
+
+```json
+{
+  "prediction_label": "PNEUMONIA",
+  "confidence": 0.97
+}
+```
+
+---
+
+# 🐳 Docker Deployment
+
+## Build Image
+
+```bash
+docker build -t xray-classifier .
+```
+
+## Run Container
+
+```bash
+docker run -p 8000:8000 xray-classifier
+```
+
+---
+
+# ☁️ AWS Deployment
+
+Supported Platforms:
+
+- AWS EC2
+- AWS ECS
+- AWS ECR
+- Elastic Beanstalk
+- Application Load Balancer
+
+---
+
+# 🛠 Tech Stack
+
+| Category | Technology |
+|------------|------------|
+| Language | Python |
+| Deep Learning | PyTorch |
+| Model | ResNet18 |
+| Backend | FastAPI |
+| UI | Streamlit |
 | Containerization | Docker |
-| Cloud | AWS (ECR, EC2, App Runner) |
+| Cloud | AWS |
 | CI/CD | GitHub Actions |
 
-## Key Design Decisions
+---
 
-1. **Transfer Learning over Custom CNN**: ResNet18 pre-trained on ImageNet provides dramatically better feature extraction than a small custom CNN (~17K params vs 11M params)
-2. **CrossEntropyLoss with Raw Logits**: Numerically stable; avoids the sigmoid/softmax + loss mismatch bug
-3. **Validation Split from Training Data**: Prevents data leakage — test set is never seen during training
-4. **Early Stopping**: Prevents overfitting by monitoring validation loss
-5. **Matching Inference Transforms**: Inference pipeline applies the exact same normalization as training
+# 📈 Future Improvements
 
-## Disclaimer
+- [ ] Multi-class lung disease classification
+- [ ] ONNX optimization
+- [ ] TensorRT acceleration
+- [ ] Kubernetes deployment
+- [ ] Model monitoring
+- [ ] Explainable AI dashboard
 
-⚠️ This is a **decision-support tool** for research purposes only. It is **not** a substitute for professional medical diagnosis. Always consult a qualified healthcare provider.
+---
 
-## License
+# ⚠️ Disclaimer
 
-This project is for educational and research purposes.
+This project is intended for educational and research purposes only.
+
+It should not be used as a replacement for professional medical diagnosis.
+
+---
+
+# 👨‍💻 Author
+
+**Sachin Upadhyay**
+
+AI Engineer | Machine Learning Enthusiast | Data Science Aspirant
+
+---
+
+# ⭐ If you found this project useful
+
+Give it a star ⭐ and support the repository.
