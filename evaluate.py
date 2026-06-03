@@ -53,17 +53,17 @@ EVAL_DIR = os.path.join(
 # Model Loading (auto-detect architecture)
 # ---------------------------------------------------------------------------
 def load_model():
-    state = torch.load(MODEL_PATH, map_location=DEVICE)
+    state = torch.load(MODEL_PATH, map_location=DEVICE, weights_only=True)
 
-    if isinstance(state, torch.nn.Module):
-        model = state
-    elif isinstance(state, dict):
-        print("[INFO] Detected XRayClassifier checkpoint")
-        model = XRayClassifier(num_classes=NUM_CLASSES)
-        model.load_state_dict(state)
-    else:
-        raise RuntimeError(f"Unknown checkpoint format: {type(state)}")
+    if not isinstance(state, dict):
+        raise RuntimeError(
+            f"Expected a state_dict (dict), got {type(state)}. "
+            "Full-model pickle loading is disabled for security."
+        )
 
+    print("[INFO] Detected XRayClassifier checkpoint")
+    model = XRayClassifier(num_classes=NUM_CLASSES)
+    model.load_state_dict(state)
     model.to(DEVICE)
     model.eval()
     return model

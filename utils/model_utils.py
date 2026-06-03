@@ -51,12 +51,11 @@ INFERENCE_TRANSFORM = T.Compose(
 
 def load_model(model_path: str | None = None) -> XRayClassifier:
     """
-    Load the trained model from a .pth checkpoint.
+    Load the trained model from a .pth state_dict checkpoint.
 
-    Auto-detects whether the checkpoint is:
-      - A full model (torch.save(model, ...))
-      - A state_dict for the legacy Net architecture
-      - A state_dict for the ResNet-based XRayClassifier
+    Only supports state_dict checkpoints (created via ``torch.save(model.state_dict(), ...)``).
+    Full-model pickle loading is disabled for security — ``weights_only=True`` prevents
+    arbitrary code execution from untrusted checkpoint files.
 
     Args:
         model_path: Absolute path to the .pth file. Defaults to repo-root xray_model.pth.
@@ -73,17 +72,16 @@ def load_model(model_path: str | None = None) -> XRayClassifier:
     if not os.path.exists(path):
         raise FileNotFoundError(f"Model file not found: {path}")
 
-    state = torch.load(path, map_location=DEVICE, weights_only=False)
+    state = torch.load(path, map_location=DEVICE, weights_only=True)
 
-    # Full model save
-    if isinstance(state, torch.nn.Module):
-        model = state
-    elif isinstance(state, dict):
-        model = XRayClassifier(num_classes=NUM_CLASSES, freeze_backbone=False)
-        model.load_state_dict(state)
-    else:
-        raise RuntimeError(f"Unexpected checkpoint format: {type(state)}")
+    if not isinstance(state, dict):
+        raise RuntimeError(
+            f"Expected a state_dict (dict), got {type(state)}. "
+            "Full-model pickle loading is disabled for security."
+        )
 
+    model = XRayClassifier(num_classes=NUM_CLASSES, freeze_backbone=False)
+    model.load_state_dict(state)
     model.to(DEVICE)
     model.eval()
     return model

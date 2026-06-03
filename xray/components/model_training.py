@@ -445,7 +445,9 @@ class ModelTrainer:
             # Load best model weights for downstream evaluation
             model.load_state_dict(
                 torch.load(
-                    self.model_trainer_config.trained_model_path, map_location=DEVICE
+                    self.model_trainer_config.trained_model_path,
+                    map_location=DEVICE,
+                    weights_only=True,
                 )
             )
 

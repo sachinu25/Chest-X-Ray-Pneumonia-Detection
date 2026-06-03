@@ -199,22 +199,24 @@ class ModelEvaluation:
         self.model_trainer_artifact = model_trainer_artifact
 
     def load_model(self) -> Module:
-        """Load the best model checkpoint, auto-detecting architecture."""
+        """Load the best model checkpoint (state_dict only, for security)."""
         logging.info("Loading trained model for evaluation")
         try:
             state = torch.load(
                 self.model_trainer_artifact.trained_model_path,
                 map_location=self.model_evaluation_config.device,
+                weights_only=True,
             )
 
-            if isinstance(state, torch.nn.Module):
-                model = state
-            elif isinstance(state, dict):
-                logging.info("Loading XRayClassifier checkpoint")
-                model = XRayClassifier()
-                model.load_state_dict(state)
-            else:
-                raise RuntimeError(f"Unknown checkpoint format: {type(state)}")
+            if not isinstance(state, dict):
+                raise RuntimeError(
+                    f"Expected a state_dict (dict), got {type(state)}. "
+                    "Full-model pickle loading is disabled for security."
+                )
+
+            logging.info("Loading XRayClassifier checkpoint")
+            model = XRayClassifier()
+            model.load_state_dict(state)
 
             model.to(self.model_evaluation_config.device)
             model.eval()

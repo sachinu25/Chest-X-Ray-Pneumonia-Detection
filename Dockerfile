@@ -31,18 +31,32 @@ RUN groupadd -r appuser && useradd -r -g appuser -d /app -s /sbin/nologin appuse
 
 WORKDIR /app
 
+# ---------------------------------------------------------------------------
+# Environment variables for production
+# ---------------------------------------------------------------------------
+# Ensure Python output is flushed immediately (critical for CloudWatch log capture)
+ENV PYTHONUNBUFFERED=1
+# Prevent .pyc file clutter in ephemeral containers
+ENV PYTHONDONTWRITEBYTECODE=1
+# Route all logs to stdout as structured JSON (CloudWatch / ELK compatible)
+ENV LOG_TARGET=cloud
+# Default environment label for structured log entries
+ENV ENVIRONMENT=production
+
 # Copy installed packages from builder
 COPY --from=builder /install /usr/local
 
 # Copy application code
 COPY xray/ ./xray/
+COPY utils/ ./utils/
 COPY app.py .
 COPY train.py .
+COPY evaluate.py .
 
 # Copy model weights if available
 COPY xray_model.pth* ./
 
-# Create directories for logs and artifacts
+# Create directories for local-mode logs and training artifacts
 RUN mkdir -p logs artifacts && chown -R appuser:appuser /app
 
 # Switch to non-root user
@@ -51,9 +65,16 @@ USER appuser
 # Expose API port
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+# ---------------------------------------------------------------------------
+# Health check — uses the /ready probe (readiness, not just liveness)
+# start-period allows time for model loading before first check
+# ---------------------------------------------------------------------------
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')" || exit 1
 
+# ---------------------------------------------------------------------------
 # Start FastAPI server
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+#   --workers 1: Single worker avoids CUDA fork-safety issues.
+#                For horizontal scaling, increase ECS task count instead.
+# ---------------------------------------------------------------------------
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
