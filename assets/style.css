@@ -1,0 +1,373 @@
+/* ================================================================
+   Chest X-Ray AI Dashboard — Custom Styles
+   Professional healthcare theme with glassmorphism, smooth animations,
+   and dark-mode support.
+   ================================================================ */
+
+/* ---- Google Font Import ---- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* ---- CSS Variables ---- */
+:root {
+    --primary: #0A7E8C;
+    --primary-light: #0EA5B5;
+    --primary-dark: #065A64;
+    --accent-red: #FF1744;
+    --accent-green: #00E676;
+    --accent-orange: #FF9100;
+    --accent-yellow: #FFC107;
+
+    --bg-primary: #0F1117;
+    --bg-secondary: #1A1D29;
+    --bg-card: rgba(26, 29, 41, 0.85);
+    --bg-glass: rgba(255, 255, 255, 0.04);
+
+    --text-primary: #E8EAED;
+    --text-secondary: #9AA0A6;
+    --text-muted: #5F6368;
+
+    --border-color: rgba(255, 255, 255, 0.08);
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --shadow-glow: 0 0 20px rgba(10, 126, 140, 0.15);
+
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---- Global Overrides ---- */
+.stApp {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+/* ---- Hide Streamlit Default Elements ---- */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* ---- Sidebar Styling ---- */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0d1117 0%, #161b22 100%) !important;
+    border-right: 1px solid var(--border-color) !important;
+}
+
+[data-testid="stSidebar"] .stRadio > label {
+    font-weight: 600 !important;
+    color: var(--primary-light) !important;
+    font-size: 0.85rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1.2px !important;
+    margin-bottom: 0.5rem !important;
+}
+
+[data-testid="stSidebar"] .stRadio > div > label {
+    background: var(--bg-glass) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 0.65rem 1rem !important;
+    margin-bottom: 0.35rem !important;
+    transition: var(--transition) !important;
+    color: var(--text-primary) !important;
+    cursor: pointer !important;
+}
+
+[data-testid="stSidebar"] .stRadio > div > label:hover {
+    background: rgba(10, 126, 140, 0.15) !important;
+    border-color: var(--primary) !important;
+    transform: translateX(4px);
+}
+
+[data-testid="stSidebar"] .stRadio > div > label[data-checked="true"],
+[data-testid="stSidebar"] .stRadio > div > label[aria-checked="true"] {
+    background: rgba(10, 126, 140, 0.2) !important;
+    border-color: var(--primary) !important;
+    box-shadow: var(--shadow-glow) !important;
+}
+
+/* ---- Metric Cards ---- */
+.metric-card {
+    background: var(--bg-card) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius) !important;
+    padding: 1.25rem 1.5rem !important;
+    box-shadow: var(--shadow) !important;
+    transition: var(--transition) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow), var(--shadow-glow) !important;
+    border-color: var(--primary) !important;
+}
+
+.metric-card .metric-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.1;
+    margin: 0.3rem 0;
+}
+
+.metric-card .metric-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.metric-card .metric-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.3rem;
+}
+
+/* ---- Card Accent Colors ---- */
+.metric-card.accuracy::before  { background: linear-gradient(90deg, #00E676, #69F0AE); }
+.metric-card.f1::before        { background: linear-gradient(90deg, #2979FF, #82B1FF); }
+.metric-card.roc::before       { background: linear-gradient(90deg, #AA00FF, #D500F9); }
+.metric-card.dataset::before   { background: linear-gradient(90deg, #FF9100, #FFD740); }
+
+/* ---- Prediction Result Cards ---- */
+.prediction-card {
+    background: var(--bg-card) !important;
+    backdrop-filter: blur(12px) !important;
+    border-radius: var(--radius-lg) !important;
+    padding: 2rem !important;
+    margin: 1rem 0 !important;
+    box-shadow: var(--shadow) !important;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.prediction-card.pneumonia {
+    border: 2px solid var(--accent-red) !important;
+}
+.prediction-card.pneumonia::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #FF1744, #FF5252);
+}
+
+.prediction-card.normal {
+    border: 2px solid var(--accent-green) !important;
+}
+.prediction-card.normal::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #00E676, #69F0AE);
+}
+
+.prediction-label {
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin: 0.5rem 0;
+    letter-spacing: 1px;
+}
+
+.prediction-label.pneumonia { color: var(--accent-red); }
+.prediction-label.normal    { color: var(--accent-green); }
+
+.confidence-value {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ---- Risk Level Badge ---- */
+.risk-badge {
+    display: inline-block;
+    padding: 0.4rem 1.2rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+/* ---- File Uploader ---- */
+[data-testid="stFileUploader"] {
+    border: 2px dashed var(--primary) !important;
+    border-radius: var(--radius) !important;
+    padding: 1.5rem !important;
+    transition: var(--transition) !important;
+}
+
+[data-testid="stFileUploader"]:hover {
+    border-color: var(--primary-light) !important;
+    background: rgba(10, 126, 140, 0.05) !important;
+}
+
+/* ---- Buttons ---- */
+.stButton > button {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light)) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 0.6rem 2rem !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    letter-spacing: 0.5px !important;
+    transition: var(--transition) !important;
+    box-shadow: 0 4px 15px rgba(10, 126, 140, 0.3) !important;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 25px rgba(10, 126, 140, 0.5) !important;
+}
+
+.stButton > button:active {
+    transform: translateY(0) !important;
+}
+
+/* ---- Download Button ---- */
+.stDownloadButton > button {
+    background: linear-gradient(135deg, #1a1d29, #2a2d39) !important;
+    border: 1px solid var(--primary) !important;
+    color: var(--primary-light) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 0.6rem 2rem !important;
+    font-weight: 600 !important;
+    transition: var(--transition) !important;
+}
+
+.stDownloadButton > button:hover {
+    background: rgba(10, 126, 140, 0.15) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* ---- Section Headers ---- */
+.section-header {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 1.5rem 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ---- Info Box ---- */
+.info-box {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--primary);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+/* ---- Divider ---- */
+.custom-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+    margin: 1.5rem 0;
+    border: none;
+}
+
+/* ---- History Table ---- */
+[data-testid="stTable"] {
+    border-radius: var(--radius) !important;
+    overflow: hidden !important;
+}
+
+[data-testid="stTable"] th {
+    background: var(--bg-secondary) !important;
+    color: var(--primary-light) !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 1px !important;
+}
+
+[data-testid="stTable"] td {
+    border-color: var(--border-color) !important;
+}
+
+/* ---- Animations ---- */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-in {
+    animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* ---- Spinner / Loading ---- */
+.stSpinner > div {
+    border-top-color: var(--primary) !important;
+}
+
+/* ---- Plotly Charts Container ---- */
+.plotly-chart-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin: 0.5rem 0;
+}
+
+/* ---- Responsive Adjustments ---- */
+@media (max-width: 768px) {
+    .metric-card .metric-value { font-size: 1.5rem; }
+    .prediction-label { font-size: 1.5rem; }
+    .confidence-value { font-size: 2rem; }
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--primary-dark);
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+}
