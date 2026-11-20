@@ -31,10 +31,19 @@ from xray.constant.training_pipeline import (
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Default model path (repo root)
-DEFAULT_MODEL_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "xray_model.pth",
-)
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_MODEL_PATH = os.path.join(_REPO_ROOT, "xray_model.pth")
+MODEL_CONFIG_PATH = os.path.join(_REPO_ROOT, "model_config.json")
+
+
+def load_model_config() -> Dict:
+    """Architecture, decision threshold and TTA flag saved by scripts/train_v2.py."""
+    import json
+    try:
+        with open(MODEL_CONFIG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {"arch": "resnet18", "threshold": 0.5, "tta_hflip": False}
 
 # ---------------------------------------------------------------------------
 # Inference Transforms (MUST match training pipeline exactly)
@@ -80,7 +89,9 @@ def load_model(model_path: str | None = None) -> XRayClassifier:
             "Full-model pickle loading is disabled for security."
         )
 
-    model = XRayClassifier(num_classes=NUM_CLASSES, freeze_backbone=False, pretrained=False)
+    cfg = load_model_config()
+    model = XRayClassifier(num_classes=NUM_CLASSES, freeze_backbone=False, pretrained=False,
+                           arch=cfg.get("arch", "resnet18"))
     model.load_state_dict(state)
     model.to(DEVICE)
     model.eval()
@@ -97,6 +108,10 @@ def preprocess_image(image: Image.Image) -> torch.Tensor:
     Returns:
         Tensor of shape (1, 3, 224, 224) on the target device.
     """
+    if load_model_config().get("preprocess") == "equalize":
+        # Must match training (scripts/train_v2.py): grayscale histogram equalisation
+        from PIL import ImageOps
+        image = ImageOps.equalize(image.convert("L"))
     img = image.convert("RGB")
     tensor = INFERENCE_TRANSFORM(img).unsqueeze(0).to(DEVICE)
     return tensor
@@ -118,8 +133,10 @@ def predict(
         class names to their softmax probabilities.
     """
     with torch.no_grad():
-        logits = model(tensor)
-        probs = F.softmax(logits, dim=1).squeeze(0)
+        probs = F.softmax(model(tensor), dim=1).squeeze(0)
+        if load_model_config().get("tta_hflip"):
+            # Test-time augmentation: average with the horizontally flipped image
+            probs = (probs + F.softmax(model(torch.flip(tensor, dims=[3])), dim=1).squeeze(0)) / 2
 
     confidence, idx = torch.max(probs, dim=0)
     label = PREDICTION_LABEL[int(idx)]

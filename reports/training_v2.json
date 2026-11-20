@@ -1,0 +1,68 @@
+{
+  "split": {
+    "train": 4423,
+    "val": 809,
+    "test": 624
+  },
+  "epochs": 8,
+  "lr": 0.0002,
+  "candidates": {
+    "resnet18": {
+      "best_epoch": 5,
+      "val": {
+        "threshold": 0.835,
+        "accuracy": 0.979,
+        "roc_auc": 0.9981,
+        "pr_auc": 0.9994,
+        "sensitivity": 0.9774,
+        "specificity": 0.9841,
+        "precision": 0.9951,
+        "macro_f1": 0.9712,
+        "missed_pneumonia": 14,
+        "false_alarms": 3
+      }
+    },
+    "efficientnet_b0": {
+      "best_epoch": 2,
+      "val": {
+        "threshold": 0.695,
+        "accuracy": 0.9839,
+        "roc_auc": 0.9977,
+        "pr_auc": 0.9993,
+        "sensitivity": 0.9839,
+        "specificity": 0.9841,
+        "precision": 0.9951,
+        "macro_f1": 0.9778,
+        "missed_pneumonia": 10,
+        "false_alarms": 3
+      }
+    }
+  },
+  "chosen": "resnet18",
+  "test": {
+    "chosen_threshold": {
+      "threshold": 0.835,
+      "accuracy": 0.875,
+      "roc_auc": 0.9166,
+      "pr_auc": 0.9313,
+      "sensitivity": 0.9923,
+      "specificity": 0.6795,
+      "precision": 0.8377,
+      "macro_f1": 0.8557,
+      "missed_pneumonia": 3,
+      "false_alarms": 75
+    },
+    "threshold_0.5": {
+      "threshold": 0.5,
+      "accuracy": 0.7724,
+      "roc_auc": 0.9166,
+      "pr_auc": 0.9313,
+      "sensitivity": 0.9974,
+      "specificity": 0.3974,
+      "precision": 0.734,
+      "macro_f1": 0.7064,
+      "missed_pneumonia": 1,
+      "false_alarms": 141
+    }
+  }
+}

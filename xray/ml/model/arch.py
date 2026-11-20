@@ -13,7 +13,7 @@ import torchvision.models as models
 
 class XRayClassifier(nn.Module):
     """
-    Transfer learning classifier using ResNet18 pretrained on ImageNet.
+    Transfer learning classifier (ResNet18 / DenseNet121 / EfficientNet-B0) pretrained on ImageNet.
 
     Architecture:
         - ResNet18 backbone (frozen or fine-tunable)
@@ -29,33 +29,44 @@ class XRayClassifier(nn.Module):
             unnecessary 45 MB download on every cold start.
     """
 
+    # arch name -> (constructor, ImageNet weights, classifier attribute, Grad-CAM layer name)
+    ARCHS = {
+        "resnet18": (models.resnet18, models.ResNet18_Weights.IMAGENET1K_V1, "fc", "layer4"),
+        "densenet121": (models.densenet121, models.DenseNet121_Weights.IMAGENET1K_V1, "classifier", "features"),
+        "efficientnet_b0": (models.efficientnet_b0, models.EfficientNet_B0_Weights.IMAGENET1K_V1, "classifier", "features"),
+    }
+
     def __init__(
         self,
         num_classes: int = 2,
         dropout_rate: float = 0.3,
         freeze_backbone: bool = False,
         pretrained: bool = True,
+        arch: str = "resnet18",
     ):
         super().__init__()
+        if arch not in self.ARCHS:
+            raise ValueError(f"Unknown arch '{arch}'. Choose from {list(self.ARCHS)}")
+        ctor, imagenet_weights, head_attr, self.gradcam_layer = self.ARCHS[arch]
+        self.arch = arch
 
-        # Load pretrained ResNet18 backbone
-        weights = models.ResNet18_Weights.IMAGENET1K_V1 if pretrained else None
-        self.backbone = models.resnet18(weights=weights)
+        self.backbone = ctor(weights=imagenet_weights if pretrained else None)
 
         # Optionally freeze backbone for feature extraction mode
         if freeze_backbone:
             for param in self.backbone.parameters():
                 param.requires_grad = False
 
-        # Replace the final fully connected layer with custom classification head
-        in_features = self.backbone.fc.in_features
-        self.backbone.fc = nn.Sequential(
+        # Replace the final classifier with the custom classification head
+        old_head = getattr(self.backbone, head_attr)
+        in_features = old_head.in_features if isinstance(old_head, nn.Linear) else old_head[-1].in_features
+        setattr(self.backbone, head_attr, nn.Sequential(
             nn.Dropout(p=dropout_rate),
             nn.Linear(in_features, 256),
             nn.ReLU(inplace=True),
             nn.Dropout(p=dropout_rate * 0.5),
             nn.Linear(256, num_classes),
-        )
+        ))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass returning raw logits (no softmax/sigmoid)."""

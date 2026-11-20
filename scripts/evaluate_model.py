@@ -29,7 +29,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from utils.model_utils import load_model, preprocess_image  # noqa: E402
+from utils.model_utils import load_model, load_model_config, predict, preprocess_image  # noqa: E402
 from xray.constant.training_pipeline import PREDICTION_LABEL  # noqa: E402
 
 THRESHOLDS = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
@@ -73,10 +73,13 @@ def main():
     ys, probs = [], []
     with torch.no_grad():
         for img, label in load_images(args):
-            p = torch.softmax(model(preprocess_image(img)), dim=1)[0, 1].item()
+            _, _, prob = predict(model, preprocess_image(img))  # applies TTA if model_config.json says so
+            p = prob["PNEUMONIA"]
             ys.append(label); probs.append(p)
     y, p = np.array(ys), np.array(probs)
-    pred = (p >= 0.5).astype(int)
+    cfg = load_model_config()
+    thr = float(cfg.get("threshold", 0.5))
+    pred = (p >= thr).astype(int)
 
     rep = classification_report(y, pred, target_names=["NORMAL", "PNEUMONIA"], output_dict=True)
     cm = confusion_matrix(y, pred)
@@ -92,9 +95,11 @@ def main():
         "per_class": {c: {k: round(rep[c][k], 4) for k in ("precision", "recall", "f1-score")} | {"support": int(rep[c]["support"])}
                       for c in ("NORMAL", "PNEUMONIA")},
         "confusion_matrix": {"labels": ["NORMAL", "PNEUMONIA"], "rows_actual_cols_predicted": cm.tolist()},
-        "threshold_analysis": [binary_metrics(y, p, t) for t in THRESHOLDS],
-        "note": ("The test split is used only for reporting. Threshold rows show the sensitivity/specificity "
-                 "trade-off; the app's default decision threshold stays at 0.5."),
+        "model": {"arch": cfg.get("arch", "resnet18"), "decision_threshold": round(thr, 3),
+                  "tta_hflip": bool(cfg.get("tta_hflip", False))},
+        "threshold_analysis": [binary_metrics(y, p, t) for t in sorted(set(THRESHOLDS + [round(thr, 3)]))],
+        "note": ("The test split is used only for reporting. The decision threshold was chosen on a patient-level "
+                 "validation split (see reports/training_v2.json); the other rows show the trade-off."),
     }
     (ROOT / "reports").mkdir(exist_ok=True)
     (ROOT / "reports" / "evaluation.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
@@ -112,7 +117,7 @@ def main():
             ax.text(j, i, cm[i, j], ha="center", va="center", fontsize=16,
                     color="white" if cm[i, j] > cm.max() / 2 else "black")
     ax.set(xticks=[0, 1], yticks=[0, 1], xticklabels=["NORMAL", "PNEUMONIA"], yticklabels=["NORMAL", "PNEUMONIA"],
-           xlabel="Predicted", ylabel="Actual", title=f"Confusion Matrix (n={len(y)}, threshold 0.5)")
+           xlabel="Predicted", ylabel="Actual", title=f"Confusion Matrix (n={len(y)}, threshold {thr:.2f})")
     fig.tight_layout(); fig.savefig(assets / "confusion_matrix.png", dpi=150); plt.close(fig)
 
     fpr, tpr, _ = roc_curve(y, p)
