@@ -1,0 +1,81 @@
+{
+  "n_calibration": 180,
+  "n_holdout": 444,
+  "folds": 3,
+  "lr": 5e-05,
+  "final": {
+    "epochs": 4,
+    "threshold": 0.93,
+    "holdout": {
+      "threshold": 0.93,
+      "accuracy": 0.9302,
+      "roc_auc": 0.9599,
+      "pr_auc": 0.9629,
+      "sensitivity": 0.9466,
+      "specificity": 0.9018,
+      "precision": 0.9433,
+      "macro_f1": 0.9248,
+      "missed_pneumonia": 15,
+      "false_alarms": 16
+    },
+    "cv": [
+      {
+        "epochs": 0,
+        "oof_auc": 0.9295,
+        "oof_acc_at_best_thr": 0.8889
+      },
+      {
+        "epochs": 1,
+        "oof_auc": 0.9623,
+        "oof_acc_at_best_thr": 0.9111
+      },
+      {
+        "epochs": 2,
+        "oof_auc": 0.9461,
+        "oof_acc_at_best_thr": 0.9
+      },
+      {
+        "epochs": 3,
+        "oof_auc": 0.9375,
+        "oof_acc_at_best_thr": 0.8833
+      },
+      {
+        "epochs": 4,
+        "oof_auc": 0.9475,
+        "oof_acc_at_best_thr": 0.9278
+      },
+      {
+        "epochs": 5,
+        "oof_auc": 0.919,
+        "oof_acc_at_best_thr": 0.8944
+      },
+      {
+        "epochs": 6,
+        "oof_auc": 0.8393,
+        "oof_acc_at_best_thr": 0.8722
+      },
+      {
+        "epochs": 7,
+        "oof_auc": 0.7812,
+        "oof_acc_at_best_thr": 0.8611
+      },
+      {
+        "epochs": 8,
+        "oof_auc": 0.8833,
+        "oof_acc_at_best_thr": 0.8611
+      }
+    ],
+    "oof_calibration": {
+      "threshold": 0.93,
+      "accuracy": 0.9278,
+      "roc_auc": 0.9475,
+      "pr_auc": 0.9586,
+      "sensitivity": 0.9725,
+      "specificity": 0.8592,
+      "precision": 0.9138,
+      "macro_f1": 0.923,
+      "missed_pneumonia": 3,
+      "false_alarms": 10
+    }
+  }
+}

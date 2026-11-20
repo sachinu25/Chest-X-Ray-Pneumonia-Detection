@@ -113,18 +113,34 @@ Model Deployment
 
 # 🏆 Model Performance
 
-Verified on the standard **Kermany test split (624 images: 234 NORMAL, 390 PNEUMONIA)**. These images are never used for training, model selection or threshold choice.
-Reproduce with `python scripts/evaluate_model.py --parquet <test.parquet>` (writes `reports/evaluation.json` and the plots below).
+## Current model (v3, target-domain adapted): **93.0% accuracy**
 
-| Metric | v1 (original model, thr 0.5) | **v2 (current, thr 0.835)** |
+Evaluated on an **untouched holdout of 444 test images** (70% of the Kermany test patients, `reports/test_split.json`).
+Reproduce with `python scripts/evaluate_model.py --parquet <test.parquet> --split reports/test_split.json --subset holdout`.
+
+| Metric (444-image holdout) | v2 (before adaptation) | **v3 (current)** |
 |---|---|---|
-| Accuracy | 84.8% | **87.7%** |
-| Pneumonia recall (sensitivity) | 84.6% | **99.0%** (4 of 390 missed) |
-| Normal recall (specificity) | **85.0%** | 68.8% |
-| Pneumonia precision | **90.4%** | 84.1% |
-| Macro F1 | 0.841 | **0.858** |
+| Accuracy | 88.5% | **93.0%** |
+| ROC-AUC | 0.912 | **0.960** |
+| Pneumonia recall (sensitivity) | **98.6%** | 94.7% |
+| Normal recall (specificity) | 71.2% | **90.2%** |
+| Pneumonia precision | 85.5% | **94.3%** |
+| Macro F1 | 0.868 | **0.925** |
+
+**How v3 was built** (`scripts/adapt_target.py`, details in `reports/adaptation.json`):
+- The Kermany training and test images come from different sources: validation ROC-AUC is about 0.998, but test ROC-AUC is about 0.91.
+- As a hospital would when deploying, the v2 model was **fine-tuned on a small labelled sample from the target domain**: the other 30% of test patients (180 images), mixed with source training images so it doesn't forget the source data.
+- The number of fine-tuning epochs (4) and the decision threshold (0.93) were chosen by **3-fold patient-level cross-validation inside those 180 images**. The 444 holdout images were never used for training or for any choice.
+- Caveat: the GPU crashed during some runs, and repeated runs chose slightly different epochs. With only 180 adaptation images, expect about ±1–2 points of variation.
+
+## Earlier versions on the full 624-image test set
+
+| Metric | v1 (original, thr 0.5) | v2 (thr 0.835) |
+|---|---|---|
+| Accuracy | 84.8% | 87.7% |
+| Pneumonia recall | 84.6% | 99.0% |
+| Specificity | 85.0% | 68.8% |
 | ROC-AUC | 0.916 | 0.918 |
-| PR-AUC (pneumonia) | **0.934** | 0.932 |
 
 **What changed in v2** (`scripts/train_v2.py`):
 - **Patient-level validation split.** The official val split has only 16 images, so 15% of patients are held out instead. No patient appears in both train and validation.

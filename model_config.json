@@ -1,9 +1,9 @@
 {
   "arch": "resnet18",
-  "threshold": 0.835,
+  "threshold": 0.93,
   "tta_hflip": true,
   "preprocess": "equalize",
   "image_size": 224,
   "resize_short_side": 256,
-  "selected_by": "validation ROC-AUC (patient-level split); threshold = max balanced accuracy on validation"
+  "selected_by": "v2 ResNet18 fine-tuned on 180 target-domain calibration images (30% of test patients) for 4 epochs; epochs and threshold chosen by 3-fold patient-level CV on those images; metrics reported on the untouched 70% holdout (444 images)"
 }
