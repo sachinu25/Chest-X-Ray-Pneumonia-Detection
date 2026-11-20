@@ -267,7 +267,8 @@ if page == "🏠 Overview":
                 • <strong>Validation:</strong> 15% of patients held out (no patient leakage)<br>
                 • <strong>Optimizer:</strong> AdamW (lr=2e-4, wd=1e-4), one-cycle LR, bf16, 8 epochs<br>
                 • <strong>Loss:</strong> Class-weighted CrossEntropy + label smoothing 0.1<br>
-                • <strong>Threshold:</strong> chosen on validation (max balanced accuracy)
+                • <strong>Target-domain adaptation:</strong> fine-tuned on 180 labelled test-source images (4 epochs, 3-fold CV)<br>
+                • <strong>Threshold:</strong> 0.93, chosen by cross-validation on those images
             </div>
             """,
             unsafe_allow_html=True,
@@ -352,7 +353,7 @@ elif page == "🔬 Predict":
     threshold = st.slider(
         "Pneumonia decision threshold",
         min_value=0.05, max_value=0.95, value=float(round(_cfg.get("threshold", 0.5), 3)), step=0.005, format="%.3f",
-        help="Predict PNEUMONIA when P(pneumonia) ≥ threshold. The default was chosen on the validation set "
+        help="Predict PNEUMONIA when P(pneumonia) ≥ threshold. The default was chosen by cross-validation on target-domain calibration images "
              "(maximum balanced accuracy). Lower = higher sensitivity (fewer missed cases, more false alarms). "
              "See the Overview page for the test-set trade-off table.",
     )
