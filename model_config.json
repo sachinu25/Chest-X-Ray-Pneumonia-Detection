@@ -1,0 +1,9 @@
+{
+  "arch": "resnet18",
+  "threshold": 0.835,
+  "tta_hflip": true,
+  "preprocess": "equalize",
+  "image_size": 224,
+  "resize_short_side": 256,
+  "selected_by": "validation ROC-AUC (patient-level split); threshold = max balanced accuracy on validation"
+}

@@ -4,22 +4,22 @@
   "n_images": 624,
   "n_normal": 234,
   "n_pneumonia": 390,
-  "accuracy": 0.8478,
-  "macro_f1": 0.8407,
-  "roc_auc": 0.9156,
-  "pr_auc_pneumonia": 0.9341,
-  "brier_score": 0.1126,
+  "accuracy": 0.8766,
+  "macro_f1": 0.8582,
+  "roc_auc": 0.9178,
+  "pr_auc_pneumonia": 0.9323,
+  "brier_score": 0.1673,
   "per_class": {
     "NORMAL": {
-      "precision": 0.7683,
-      "recall": 0.8504,
-      "f1-score": 0.8073,
+      "precision": 0.9758,
+      "recall": 0.688,
+      "f1-score": 0.807,
       "support": 234
     },
     "PNEUMONIA": {
-      "precision": 0.9041,
-      "recall": 0.8462,
-      "f1-score": 0.8742,
+      "precision": 0.841,
+      "recall": 0.9897,
+      "f1-score": 0.9093,
       "support": 390
     }
   },
@@ -30,79 +30,93 @@
     ],
     "rows_actual_cols_predicted": [
       [
-        199,
-        35
+        161,
+        73
       ],
       [
-        60,
-        330
+        4,
+        386
       ]
     ]
+  },
+  "model": {
+    "arch": "resnet18",
+    "decision_threshold": 0.835,
+    "tta_hflip": true
   },
   "threshold_analysis": [
     {
       "threshold": 0.3,
-      "accuracy": 0.8542,
-      "sensitivity_pneumonia_recall": 0.9385,
-      "specificity_normal_recall": 0.7137,
-      "precision_pneumonia": 0.8453,
-      "missed_pneumonia_cases": 24,
-      "false_alarms": 67
+      "accuracy": 0.742,
+      "sensitivity_pneumonia_recall": 0.9974,
+      "specificity_normal_recall": 0.3162,
+      "precision_pneumonia": 0.7086,
+      "missed_pneumonia_cases": 1,
+      "false_alarms": 160
     },
     {
       "threshold": 0.4,
-      "accuracy": 0.8638,
-      "sensitivity_pneumonia_recall": 0.9051,
-      "specificity_normal_recall": 0.7949,
-      "precision_pneumonia": 0.8803,
-      "missed_pneumonia_cases": 37,
-      "false_alarms": 48
+      "accuracy": 0.758,
+      "sensitivity_pneumonia_recall": 0.9974,
+      "specificity_normal_recall": 0.359,
+      "precision_pneumonia": 0.7217,
+      "missed_pneumonia_cases": 1,
+      "false_alarms": 150
     },
     {
       "threshold": 0.5,
-      "accuracy": 0.8478,
-      "sensitivity_pneumonia_recall": 0.8462,
-      "specificity_normal_recall": 0.8504,
-      "precision_pneumonia": 0.9041,
-      "missed_pneumonia_cases": 60,
-      "false_alarms": 35
+      "accuracy": 0.7708,
+      "sensitivity_pneumonia_recall": 0.9974,
+      "specificity_normal_recall": 0.3932,
+      "precision_pneumonia": 0.7326,
+      "missed_pneumonia_cases": 1,
+      "false_alarms": 142
     },
     {
       "threshold": 0.6,
-      "accuracy": 0.8333,
-      "sensitivity_pneumonia_recall": 0.7949,
-      "specificity_normal_recall": 0.8974,
-      "precision_pneumonia": 0.9281,
-      "missed_pneumonia_cases": 80,
-      "false_alarms": 24
+      "accuracy": 0.7821,
+      "sensitivity_pneumonia_recall": 0.9974,
+      "specificity_normal_recall": 0.4231,
+      "precision_pneumonia": 0.7424,
+      "missed_pneumonia_cases": 1,
+      "false_alarms": 135
     },
     {
       "threshold": 0.7,
-      "accuracy": 0.7708,
-      "sensitivity_pneumonia_recall": 0.6897,
-      "specificity_normal_recall": 0.906,
-      "precision_pneumonia": 0.9244,
-      "missed_pneumonia_cases": 121,
-      "false_alarms": 22
+      "accuracy": 0.7965,
+      "sensitivity_pneumonia_recall": 0.9974,
+      "specificity_normal_recall": 0.4615,
+      "precision_pneumonia": 0.7553,
+      "missed_pneumonia_cases": 1,
+      "false_alarms": 126
     },
     {
       "threshold": 0.8,
-      "accuracy": 0.6971,
-      "sensitivity_pneumonia_recall": 0.5615,
-      "specificity_normal_recall": 0.9231,
-      "precision_pneumonia": 0.9241,
-      "missed_pneumonia_cases": 171,
-      "false_alarms": 18
+      "accuracy": 0.8446,
+      "sensitivity_pneumonia_recall": 0.9949,
+      "specificity_normal_recall": 0.594,
+      "precision_pneumonia": 0.8033,
+      "missed_pneumonia_cases": 2,
+      "false_alarms": 95
+    },
+    {
+      "threshold": 0.835,
+      "accuracy": 0.8766,
+      "sensitivity_pneumonia_recall": 0.9897,
+      "specificity_normal_recall": 0.688,
+      "precision_pneumonia": 0.841,
+      "missed_pneumonia_cases": 4,
+      "false_alarms": 73
     },
     {
       "threshold": 0.9,
-      "accuracy": 0.5801,
-      "sensitivity_pneumonia_recall": 0.341,
-      "specificity_normal_recall": 0.9786,
-      "precision_pneumonia": 0.9638,
-      "missed_pneumonia_cases": 257,
-      "false_alarms": 5
+      "accuracy": 0.3766,
+      "sensitivity_pneumonia_recall": 0.0026,
+      "specificity_normal_recall": 1.0,
+      "precision_pneumonia": 1.0,
+      "missed_pneumonia_cases": 389,
+      "false_alarms": 0
     }
   ],
-  "note": "The test split is used only for reporting. Threshold rows show the sensitivity/specificity trade-off; the app's default decision threshold stays at 0.5."
+  "note": "The test split is used only for reporting. The decision threshold was chosen on a patient-level validation split (see reports/training_v2.json); the other rows show the trade-off."
 }

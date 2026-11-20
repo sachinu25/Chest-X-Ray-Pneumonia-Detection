@@ -113,33 +113,28 @@ Model Deployment
 
 # 🏆 Model Performance
 
-Verified on the standard **Kermany test split (624 images: 234 NORMAL, 390 PNEUMONIA)**. These images are never used for training or validation.
+Verified on the standard **Kermany test split (624 images: 234 NORMAL, 390 PNEUMONIA)**. These images are never used for training, model selection or threshold choice.
 Reproduce with `python scripts/evaluate_model.py --parquet <test.parquet>` (writes `reports/evaluation.json` and the plots below).
 
-| Metric | Value |
-|---|---|
-| Accuracy | **84.8%** |
-| Macro F1 | 0.841 |
-| ROC-AUC | 0.916 |
-| PR-AUC (pneumonia) | 0.934 |
-| Pneumonia recall (sensitivity) | 84.6% |
-| Normal recall (specificity) | 85.0% |
-| Pneumonia precision | 90.4% |
+| Metric | v1 (original model, thr 0.5) | **v2 (current, thr 0.835)** |
+|---|---|---|
+| Accuracy | 84.8% | **87.7%** |
+| Pneumonia recall (sensitivity) | 84.6% | **99.0%** (4 of 390 missed) |
+| Normal recall (specificity) | **85.0%** | 68.8% |
+| Pneumonia precision | **90.4%** | 84.1% |
+| Macro F1 | 0.841 | **0.858** |
+| ROC-AUC | 0.916 | 0.918 |
+| PR-AUC (pneumonia) | **0.934** | 0.932 |
 
-> **Correction:** earlier versions of this README reported 92.79% accuracy / 0.9923 ROC-AUC. Those numbers could not be reproduced with the committed `xray_model.pth` on the standard test split, so they were replaced with the verified results above.
+**What changed in v2** (`scripts/train_v2.py`):
+- **Patient-level validation split.** The official val split has only 16 images, so 15% of patients are held out instead. No patient appears in both train and validation.
+- **Histogram equalisation** at training and inference, plus stronger brightness/contrast augmentation. Kermany's train and test images differ in intensity, which caused many normal test images to be flagged as pneumonia.
+- **Training recipe:** AdamW + one-cycle LR, bf16 mixed precision, class-weighted loss with label smoothing, horizontal-flip test-time augmentation.
+- **Model selection:** ResNet18 and EfficientNet-B0 were compared on validation ROC-AUC, and ResNet18 won. The decision threshold (0.835) maximises balanced accuracy on validation, not on test.
 
-### Decision-threshold trade-off
+**Honest trade-off:** v2 catches almost every pneumonia case (99% recall), but raises more false alarms on normal X-rays. ROC-AUC is essentially unchanged. Validation ROC-AUC is about 0.998 versus 0.918 on test, which shows a real **distribution shift** between the Kermany train and test images. This is the main limit on further gains.
 
-For screening, missing a pneumonia case is usually costlier than a false alarm. The model outputs a probability, and the threshold controls this trade-off:
-
-| Threshold | Sensitivity | Specificity | Missed pneumonia | False alarms |
-|---|---|---|---|---|
-| 0.3 | 93.8% | 71.4% | 24 | 67 |
-| 0.4 | 90.5% | 79.5% | 37 | 48 |
-| **0.5 (default)** | 84.6% | 85.0% | 60 | 35 |
-| 0.6 | 79.5% | 89.7% | 80 | 24 |
-
-These rows are computed on the test split, so they describe the trade-off rather than a tuned threshold. A tuned threshold should be picked on a separate validation set.
+> **Correction:** earlier versions of this README reported 92.79% accuracy / 0.9923 ROC-AUC. Those numbers could not be reproduced with the committed model on the standard test split.
 
 ---
 

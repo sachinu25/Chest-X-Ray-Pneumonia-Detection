@@ -28,6 +28,7 @@ from utils.model_utils import (
     preprocess_image,
     predict,
     get_risk_level,
+    load_model_config,
     DEVICE,
     DEFAULT_MODEL_PATH,
 )
@@ -262,11 +263,11 @@ if page == "🏠 Overview":
             """
             <div class="info-box">
                 <strong>Training Details</strong><br>
-                • <strong>Backbone:</strong> ResNet-18 (ImageNet pretrained), frozen for the first 3 epochs<br>
-                • <strong>Epochs:</strong> up to 25 (with early stopping)<br>
-                • <strong>Optimizer:</strong> AdamW (lr=0.0003, wd=1e-4)<br>
-                • <strong>Scheduler:</strong> CosineAnnealingWarmRestarts (T₀=5, T_mult=2)<br>
-                • <strong>Loss:</strong> Class-weighted CrossEntropy (3:1 imbalance)
+                • <strong>Backbone:</strong> ResNet-18 (ImageNet pretrained); beat EfficientNet-B0 on validation<br>
+                • <strong>Validation:</strong> 15% of patients held out (no patient leakage)<br>
+                • <strong>Optimizer:</strong> AdamW (lr=2e-4, wd=1e-4), one-cycle LR, bf16, 8 epochs<br>
+                • <strong>Loss:</strong> Class-weighted CrossEntropy + label smoothing 0.1<br>
+                • <strong>Threshold:</strong> chosen on validation (max balanced accuracy)
             </div>
             """,
             unsafe_allow_html=True,
@@ -276,10 +277,10 @@ if page == "🏠 Overview":
             """
             <div class="info-box">
                 <strong>Data Augmentation</strong><br>
-                • RandomResizedCrop (scale 0.8–1.0), horizontal flip<br>
-                • Random rotation + affine (translate, scale)<br>
-                • Color jitter, occasional Gaussian blur<br>
-                • RandomErasing (forces global features)<br>
+                • Histogram equalisation (train + inference)<br>
+                • RandomResizedCrop (scale 0.75–1.0), rotation ±10°, flip<br>
+                • Brightness/contrast jitter, occasional Gaussian blur<br>
+                • Test-time augmentation: horizontal flip<br>
                 • ImageNet normalization
             </div>
             """,
@@ -288,7 +289,7 @@ if page == "🏠 Overview":
 
     if ev is not None:
         custom_divider()
-        section_header("📊", "Per-Class Performance (threshold 0.5)")
+        section_header("📊", f"Per-Class Performance (threshold {ev.get('model', {}).get('decision_threshold', 0.5):.2f})")
         rows = []
         for cls, icon in (("NORMAL", "🟢"), ("PNEUMONIA", "🔴")):
             m = ev["per_class"][cls]
@@ -347,12 +348,13 @@ elif page == "🔬 Predict":
         )
         st.stop()
 
+    _cfg = load_model_config()
     threshold = st.slider(
         "Pneumonia decision threshold",
-        min_value=0.30, max_value=0.70, value=0.50, step=0.05,
-        help="Predict PNEUMONIA when P(pneumonia) ≥ threshold. Lower = higher sensitivity (fewer missed cases, "
-             "more false alarms). On the test set: 0.5 → 84.6% sensitivity / 85.0% specificity; "
-             "0.4 → 90.5% / 79.5%. See the Overview page for the full table.",
+        min_value=0.05, max_value=0.95, value=float(round(_cfg.get("threshold", 0.5), 3)), step=0.005, format="%.3f",
+        help="Predict PNEUMONIA when P(pneumonia) ≥ threshold. The default was chosen on the validation set "
+             "(maximum balanced accuracy). Lower = higher sensitivity (fewer missed cases, more false alarms). "
+             "See the Overview page for the test-set trade-off table.",
     )
 
     # File uploader
@@ -491,7 +493,7 @@ elif page == "🔬 Predict":
 
             gradcam_image = None
             try:
-                cam_gen = GradCAMGenerator(model, target_layer_name="layer4")
+                cam_gen = GradCAMGenerator(model, target_layer_name=getattr(model, "gradcam_layer", "layer4"))
                 heatmap = cam_gen.generate(tensor)
                 gradcam_image = create_gradcam_overlay(image, heatmap, alpha=0.45)
                 cam_gen.cleanup()
