@@ -50,6 +50,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data-dir", default=str(ROOT.parent / "data"))
     ap.add_argument("--base", default=str(ROOT / "xray_model.pth"))
+    ap.add_argument("--arch", default="resnet18")
     ap.add_argument("--out-dir", default=str(ROOT.parent / "adapted"))
     ap.add_argument("--size", type=int, default=224)
     ap.add_argument("--epochs", type=int, default=8)
@@ -57,6 +58,8 @@ def main():
     ap.add_argument("--target-repeat", type=int, default=8, help="oversample target images per epoch")
     ap.add_argument("--source-per-epoch", type=int, default=800)
     ap.add_argument("--folds", type=int, default=3)
+    ap.add_argument("--seeds", type=int, default=1, help=">1: seed ensemble with --fixed-epochs")
+    ap.add_argument("--fixed-epochs", type=int, default=4)
     args = ap.parse_args()
     d, out = Path(args.data_dir), Path(args.out_dir); out.mkdir(parents=True, exist_ok=True)
     train_tf, eval_tf = build_tfs(args.size)
@@ -79,7 +82,7 @@ def main():
     ho_dl = mk(ho_idx, eval_tf)
 
     def fresh_model():
-        m = XRayClassifier(arch="resnet18", pretrained=False)
+        m = XRayClassifier(arch=args.arch, pretrained=False)
         m.load_state_dict(torch.load(args.base, map_location="cpu", weights_only=True))
         return m.to(DEVICE)
 
@@ -105,6 +108,39 @@ def main():
             if eval_dl is not None:
                 per_epoch.append(predict_proba(model, eval_dl))
         return per_epoch
+
+    if args.seeds > 1:
+        # ---- seed ensemble with a fixed number of epochs (pre-chosen by the single-model CV) ----
+        from sklearn.metrics import roc_auc_score
+        pids = np.array([patient_id(t_paths[i]) for i in ci])
+        upids = np.unique(pids); rng.shuffle(upids)
+        fold_of = {p: k % args.folds for k, p in enumerate(upids)}
+        folds = np.array([fold_of[p] for p in pids])
+        y_cal = t_y[ci]
+        oof = np.zeros(len(ci))
+        for k in range(args.folds):
+            tr_k, va_k = ci[folds != k], ci[folds == k]
+            va_dl = mk(va_k, eval_tf)
+            ps = []
+            for sd in range(args.seeds):
+                m = fresh_model(); finetune(m, tr_k, args.fixed_epochs, seed=SEED + 1000 * k + sd)
+                ps.append(predict_proba(m, va_dl)); del m; torch.cuda.empty_cache()
+            oof[folds == k] = np.mean(ps, axis=0)
+            print(f"fold {k} done", flush=True)
+        thr = acc_threshold(y_cal, oof)
+        print(f"ensemble OOF auc {roc_auc_score(y_cal, oof):.4f}, acc {((oof >= thr) == y_cal).mean():.4f} @thr {thr:.3f}", flush=True)
+        members, ph = [], []
+        for sd in range(args.seeds):
+            m = fresh_model(); finetune(m, ci, args.fixed_epochs, seed=SEED + 99 + sd)
+            ph.append(predict_proba(m, ho_dl))
+            torch.save(m.cpu().state_dict(), out / f"resnet18_adapted_seed{sd}.pth"); members.append(f"resnet18_adapted_seed{sd}.pth")
+            del m; torch.cuda.empty_cache()
+        ph = np.mean(ph, axis=0)
+        final = {"seeds": args.seeds, "epochs": args.fixed_epochs, "threshold": round(thr, 3),
+                 "holdout": summarize(t_y[ho_idx], ph, thr), "oof_calibration": summarize(y_cal, oof, thr)}
+        print("FINAL", json.dumps({k: final[k] for k in ("seeds", "epochs", "threshold", "holdout")}, indent=1), flush=True)
+        (out / "adaptation_ensemble.json").write_text(json.dumps({"members": members, "final": final}, indent=2), encoding="utf-8")
+        return
 
     # ---- 3-fold patient-level CV inside the calibration set: out-of-fold probs per epoch ----
     from sklearn.metrics import roc_auc_score
@@ -137,9 +173,9 @@ def main():
     final = {"epochs": best_e, "threshold": round(thr, 3), "holdout": summarize(t_y[ho_idx], ph, thr),
              "cv": cv, "oof_calibration": summarize(y_cal, oof[best_e], thr)}
     print("FINAL", json.dumps({k: final[k] for k in ("epochs", "threshold", "holdout")}, indent=1), flush=True)
-    torch.save(model.cpu().state_dict(), out / "resnet18_adapted.pth")
-    (out / "adaptation.json").write_text(json.dumps(
-        {"n_calibration": int(len(ci)), "n_holdout": int(len(ho_idx)), "folds": args.folds,
+    torch.save(model.cpu().state_dict(), out / f"{args.arch}_adapted.pth")
+    (out / f"adaptation_{args.arch}.json").write_text(json.dumps(
+        {"arch": args.arch, "n_calibration": int(len(ci)), "n_holdout": int(len(ho_idx)), "folds": args.folds,
          "lr": args.lr, "final": final}, indent=2), encoding="utf-8")
 
 

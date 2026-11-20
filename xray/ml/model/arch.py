@@ -34,6 +34,8 @@ class XRayClassifier(nn.Module):
         "resnet18": (models.resnet18, models.ResNet18_Weights.IMAGENET1K_V1, "fc", "layer4"),
         "densenet121": (models.densenet121, models.DenseNet121_Weights.IMAGENET1K_V1, "classifier", "features"),
         "efficientnet_b0": (models.efficientnet_b0, models.EfficientNet_B0_Weights.IMAGENET1K_V1, "classifier", "features"),
+        "efficientnet_b2": (models.efficientnet_b2, models.EfficientNet_B2_Weights.IMAGENET1K_V1, "classifier", "features"),
+        "convnext_tiny": (models.convnext_tiny, models.ConvNeXt_Tiny_Weights.IMAGENET1K_V1, "classifier", "features"),
     }
 
     def __init__(
@@ -60,13 +62,18 @@ class XRayClassifier(nn.Module):
         # Replace the final classifier with the custom classification head
         old_head = getattr(self.backbone, head_attr)
         in_features = old_head.in_features if isinstance(old_head, nn.Linear) else old_head[-1].in_features
-        setattr(self.backbone, head_attr, nn.Sequential(
+        new_head = nn.Sequential(
             nn.Dropout(p=dropout_rate),
             nn.Linear(in_features, 256),
             nn.ReLU(inplace=True),
             nn.Dropout(p=dropout_rate * 0.5),
             nn.Linear(256, num_classes),
-        ))
+        )
+        if arch == "convnext_tiny":
+            # ConvNeXt's classifier is LayerNorm2d -> Flatten -> Linear; keep the norm/flatten
+            old_head[-1] = new_head
+        else:
+            setattr(self.backbone, head_attr, new_head)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass returning raw logits (no softmax/sigmoid)."""
