@@ -1,22 +1,28 @@
-# Exact pins. CPU-only PyTorch keeps Streamlit Cloud / Docker images small
-# (the default CUDA build pulls several GB of nvidia-* packages).
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.5.1+cpu
-torchvision==0.20.1+cpu
+# Exact pins. Streamlit Community Cloud runs this app on Python 3.14 (Linux).
+#
+# PyTorch: CPU-only wheels keep installs small (the default Linux build pulls
+# several GB of CUDA packages). On Streamlit Cloud (Linux + CPython 3.14) the
+# CPU wheels are referenced directly, so no extra package index is needed.
+# Elsewhere (Docker passes the CPU index itself; Windows/macOS use PyPI) the
+# plain version pin is used.
+torch @ https://download.pytorch.org/whl/cpu/torch-2.9.1%2Bcpu-cp314-cp314-manylinux_2_28_x86_64.whl ; sys_platform == "linux" and python_version == "3.14" and platform_machine == "x86_64"
+torchvision @ https://download.pytorch.org/whl/cpu/torchvision-0.24.1%2Bcpu-cp314-cp314-manylinux_2_28_x86_64.whl ; sys_platform == "linux" and python_version == "3.14" and platform_machine == "x86_64"
+torch==2.9.1 ; sys_platform != "linux" or python_version != "3.14" or platform_machine != "x86_64"
+torchvision==0.24.1 ; sys_platform != "linux" or python_version != "3.14" or platform_machine != "x86_64"
 
-# Core
-numpy==2.1.3
-scikit-learn==1.5.2
-matplotlib==3.9.2
-Pillow==11.0.0
+# Core (all have Python 3.11–3.14 wheels)
+numpy==2.3.5
+scikit-learn==1.7.2
+matplotlib==3.10.7
+pillow==12.0.0
 pandas==2.3.3
 
 # Web apps
-streamlit==1.50.0
-fastapi==0.115.6
-uvicorn[standard]==0.32.1
+streamlit==1.67.0
+fastapi==0.165.0
+uvicorn==0.32.1
 python-multipart==0.0.19
 
 # Pipeline utilities
 joblib==1.4.2
-tqdm==4.66.5  # must exist on the PyTorch CPU index too (uv checks that index first)
+tqdm==4.67.1

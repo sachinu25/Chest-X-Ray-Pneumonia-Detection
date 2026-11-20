@@ -6,7 +6,7 @@
 # ==============================================================================
 
 # --------------- Stage 1: Builder ---------------
-FROM python:3.10-slim AS builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /build
 
@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir --prefix=/install \
 
 
 # --------------- Stage 2: Production ---------------
-FROM python:3.10-slim AS production
+FROM python:3.12-slim AS production
 
 # Security: run as non-root user
 RUN groupadd -r appuser && useradd -r -g appuser -d /app -s /sbin/nologin appuser
