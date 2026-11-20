@@ -113,108 +113,49 @@ Model Deployment
 
 # 🏆 Model Performance
 
+Verified on the standard **Kermany test split (624 images: 234 NORMAL, 390 PNEUMONIA)**. These images are never used for training or validation.
+Reproduce with `python scripts/evaluate_model.py --parquet <test.parquet>` (writes `reports/evaluation.json` and the plots below).
+
 | Metric | Value |
-|----------|----------|
-| Accuracy | 92.79% |
-| ROC-AUC | 0.9923 |
-| F1 Score | 0.9197 |
-| Precision | 0.9466 |
-| Recall | 0.9047 |
+|---|---|
+| Accuracy | **84.8%** |
+| Macro F1 | 0.841 |
+| ROC-AUC | 0.916 |
+| PR-AUC (pneumonia) | 0.934 |
+| Pneumonia recall (sensitivity) | 84.6% |
+| Normal recall (specificity) | 85.0% |
+| Pneumonia precision | 90.4% |
+
+> **Correction:** earlier versions of this README reported 92.79% accuracy / 0.9923 ROC-AUC. Those numbers could not be reproduced with the committed `xray_model.pth` on the standard test split, so they were replaced with the verified results above.
+
+### Decision-threshold trade-off
+
+For screening, missing a pneumonia case is usually costlier than a false alarm. The model outputs a probability, and the threshold controls this trade-off:
+
+| Threshold | Sensitivity | Specificity | Missed pneumonia | False alarms |
+|---|---|---|---|---|
+| 0.3 | 93.8% | 71.4% | 24 | 67 |
+| 0.4 | 90.5% | 79.5% | 37 | 48 |
+| **0.5 (default)** | 84.6% | 85.0% | 60 | 35 |
+| 0.6 | 79.5% | 89.7% | 80 | 24 |
+
+These rows are computed on the test split, so they describe the trade-off rather than a tuned threshold. A tuned threshold should be picked on a separate validation set.
 
 ---
 
 # 📊 Model Performance Visualizations
 
-The following visualizations provide a comprehensive overview of the model's performance and learning behavior.
-
----
-
-## 📈 Performance Metrics
-
 <p align="center">
-  <img src="assets/performance_metrics.png" width="800">
+  <img src="assets/confusion_matrix.png" width="380">
+  <img src="assets/roc_curve.png" width="380">
+  <img src="assets/pr_curve.png" width="380">
 </p>
-
-### Performance Summary
-
-| Metric | Score |
-|---------|---------|
-| Accuracy | 92.79% |
-| Precision | 94.66% |
-| Recall | 90.47% |
-| F1 Score | 91.97% |
-| ROC-AUC | 0.9923 |
-
----
 
 ## 📈 Training vs Validation Accuracy
 
 <p align="center">
   <img src="assets/training_validation_accuracy.png" width="850">
 </p>
-
-### Insights
-
-- Training accuracy consistently improves during training.
-- Validation accuracy closely follows training accuracy.
-- Minimal overfitting observed.
-- Stable convergence achieved through transfer learning.
-
----
-
-## 🎯 Confusion Matrix
-
-<p align="center">
-  <img src="assets/confusion_matrix.png" width="700">
-</p>
-
-### Interpretation
-
-| Result | Meaning |
-|----------|----------|
-| True Positive | Pneumonia correctly identified |
-| True Negative | Normal correctly identified |
-| False Positive | Normal classified as Pneumonia |
-| False Negative | Pneumonia classified as Normal |
-
-The confusion matrix demonstrates strong classification capability with a high number of correctly classified chest X-ray images.
-
----
-
-## 📉 ROC Curve
-
-<p align="center">
-  <img src="assets/roc_curve.png" width="700">
-</p>
-
-### ROC-AUC Score
-
-```text
-ROC-AUC = 0.9923
-```
-
-### Insights
-
-- Excellent class separability.
-- Very low false positive rate.
-- High sensitivity for pneumonia detection.
-- Near-perfect diagnostic performance.
-
----
-
-## 🏆 Performance Conclusion
-
-The model achieves strong performance across all major evaluation metrics and demonstrates excellent capability in distinguishing Pneumonia from Normal chest X-ray images.
-
-✅ Accuracy: 92.79%
-
-✅ ROC-AUC: 0.9923
-
-✅ F1 Score: 0.9197
-
-✅ Strong Generalization
-
-✅ Reliable Classification Performance
 
 ---
 # 📂 Project Structure
@@ -282,8 +223,8 @@ Linear(256 → 2)
 ## Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/chest-xray-pneumonia-detection.git
-cd chest-xray-pneumonia-detection
+git clone https://github.com/sachinu25/Chest-X-Ray-Pneumonia-Detection.git
+cd Chest-X-Ray-Pneumonia-Detection
 ```
 
 ## Create Virtual Environment

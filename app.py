@@ -79,7 +79,7 @@ async def lifespan(app: FastAPI):
             f"Model file not found at {DEFAULT_MODEL_PATH}. "
             "Using random weights for development."
         )
-        app.state.model = XRayClassifier(num_classes=NUM_CLASSES).to(DEVICE).eval()
+        app.state.model = XRayClassifier(num_classes=NUM_CLASSES, pretrained=False).to(DEVICE).eval()
         app.state.ready = True
     except Exception:
         logger.exception("Failed to load model during startup")

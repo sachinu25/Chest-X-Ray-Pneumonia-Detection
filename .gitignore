@@ -146,3 +146,13 @@ test.py
 # OS files
 .DS_Store
 Thumbs.db
+
+# Local virtual environments (never commit)
+venv_gpu/
+venv/
+.venv/
+
+# Local datasets
+data/
+*.parquet
+artifacts/
