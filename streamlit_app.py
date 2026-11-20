@@ -228,7 +228,7 @@ if page == "🏠 Overview":
 
     custom_divider()
     ev = load_evaluation()
-    section_header("📊", "Model Performance (verified on 624 held-out test images)")
+    section_header("📊", f"Model Performance (verified on {ev['n_images'] if ev else '—'} untouched test images)")
 
     if ev is None:
         st.warning("reports/evaluation.json not found — run `python scripts/evaluate_model.py` to generate it.")

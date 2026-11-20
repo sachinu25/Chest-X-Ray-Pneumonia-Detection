@@ -1,0 +1,129 @@
+{
+  "size": 320,
+  "members": [
+    "resnet18",
+    "efficientnet_b0"
+  ],
+  "n_val": 809,
+  "n_calibration": 180,
+  "n_holdout": 444,
+  "results": {
+    "resnet18": {
+      "threshold_from_calibration": 0.825,
+      "val": {
+        "threshold": 0.825,
+        "accuracy": 0.9543,
+        "roc_auc": 0.9979,
+        "pr_auc": 0.9993,
+        "sensitivity": 0.9419,
+        "specificity": 0.9947,
+        "precision": 0.9983,
+        "macro_f1": 0.9399,
+        "missed_pneumonia": 36,
+        "false_alarms": 1
+      },
+      "calibration": {
+        "threshold": 0.825,
+        "accuracy": 0.9,
+        "roc_auc": 0.9467,
+        "pr_auc": 0.9557,
+        "sensitivity": 0.9908,
+        "specificity": 0.7606,
+        "precision": 0.864,
+        "macro_f1": 0.8901,
+        "missed_pneumonia": 1,
+        "false_alarms": 17
+      },
+      "holdout": {
+        "threshold": 0.825,
+        "accuracy": 0.8851,
+        "roc_auc": 0.9229,
+        "pr_auc": 0.9335,
+        "sensitivity": 0.9858,
+        "specificity": 0.7117,
+        "precision": 0.8549,
+        "macro_f1": 0.8677,
+        "missed_pneumonia": 4,
+        "false_alarms": 47
+      }
+    },
+    "efficientnet_b0": {
+      "threshold_from_calibration": 0.85,
+      "val": {
+        "threshold": 0.85,
+        "accuracy": 0.9592,
+        "roc_auc": 0.9981,
+        "pr_auc": 0.9994,
+        "sensitivity": 0.95,
+        "specificity": 0.9894,
+        "precision": 0.9966,
+        "macro_f1": 0.9458,
+        "missed_pneumonia": 31,
+        "false_alarms": 2
+      },
+      "calibration": {
+        "threshold": 0.85,
+        "accuracy": 0.8833,
+        "roc_auc": 0.9241,
+        "pr_auc": 0.9373,
+        "sensitivity": 0.9817,
+        "specificity": 0.7324,
+        "precision": 0.8492,
+        "macro_f1": 0.8713,
+        "missed_pneumonia": 2,
+        "false_alarms": 19
+      },
+      "holdout": {
+        "threshold": 0.85,
+        "accuracy": 0.8423,
+        "roc_auc": 0.8669,
+        "pr_auc": 0.8762,
+        "sensitivity": 0.968,
+        "specificity": 0.6258,
+        "precision": 0.8168,
+        "macro_f1": 0.8153,
+        "missed_pneumonia": 9,
+        "false_alarms": 61
+      }
+    },
+    "ensemble": {
+      "threshold_from_calibration": 0.835,
+      "val": {
+        "threshold": 0.835,
+        "accuracy": 0.974,
+        "roc_auc": 0.9992,
+        "pr_auc": 0.9997,
+        "sensitivity": 0.9694,
+        "specificity": 0.9894,
+        "precision": 0.9967,
+        "macro_f1": 0.9648,
+        "missed_pneumonia": 19,
+        "false_alarms": 2
+      },
+      "calibration": {
+        "threshold": 0.835,
+        "accuracy": 0.8944,
+        "roc_auc": 0.9493,
+        "pr_auc": 0.959,
+        "sensitivity": 1.0,
+        "specificity": 0.7324,
+        "precision": 0.8516,
+        "macro_f1": 0.8827,
+        "missed_pneumonia": 0,
+        "false_alarms": 19
+      },
+      "holdout": {
+        "threshold": 0.835,
+        "accuracy": 0.8851,
+        "roc_auc": 0.9113,
+        "pr_auc": 0.9236,
+        "sensitivity": 0.9929,
+        "specificity": 0.6994,
+        "precision": 0.8506,
+        "macro_f1": 0.8667,
+        "missed_pneumonia": 2,
+        "false_alarms": 49
+      }
+    }
+  }
+}

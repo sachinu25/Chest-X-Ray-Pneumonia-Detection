@@ -46,19 +46,40 @@ def load_model_config() -> Dict:
         return {"arch": "resnet18", "threshold": 0.5, "tta_hflip": False}
 
 # ---------------------------------------------------------------------------
-# Inference Transforms (MUST match training pipeline exactly)
+# Inference Transforms (MUST match training: scripts/train_v2.py)
 # ---------------------------------------------------------------------------
-INFERENCE_TRANSFORM = T.Compose(
-    [
-        T.Resize(RESIZE),
-        T.CenterCrop(CENTERCROP),
-        T.ToTensor(),
-        T.Normalize(mean=NORMALIZE_LIST_1, std=NORMALIZE_LIST_2),
-    ]
-)
+def get_inference_transform() -> T.Compose:
+    cfg = load_model_config()
+    return T.Compose(
+        [
+            T.Resize(cfg.get("resize_short_side", RESIZE)),
+            T.CenterCrop(cfg.get("image_size", CENTERCROP)),
+            T.ToTensor(),
+            T.Normalize(mean=NORMALIZE_LIST_1, std=NORMALIZE_LIST_2),
+        ]
+    )
 
 
-def load_model(model_path: str | None = None) -> XRayClassifier:
+INFERENCE_TRANSFORM = get_inference_transform()
+
+
+class EnsembleModel(torch.nn.Module):
+    """Averages member probabilities; returns log-probabilities so softmax() recovers the mean."""
+
+    def __init__(self, members):
+        super().__init__()
+        self.members = torch.nn.ModuleList(members)
+        # Grad-CAM explains the first member
+        self.backbone = members[0].backbone
+        self.gradcam_layer = members[0].gradcam_layer
+        self.arch = "+".join(m.arch for m in members)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        probs = torch.stack([F.softmax(m(x), dim=1) for m in self.members]).mean(0)
+        return torch.log(probs.clamp_min(1e-8))
+
+
+def load_model(model_path: str | None = None) -> torch.nn.Module:
     """
     Load the trained model from a .pth state_dict checkpoint.
 
@@ -70,29 +91,34 @@ def load_model(model_path: str | None = None) -> XRayClassifier:
         model_path: Absolute path to the .pth file. Defaults to repo-root xray_model.pth.
 
     Returns:
-        Model in eval mode on the appropriate device.
+        Model (or EnsembleModel when model_config.json lists several members) in eval mode.
 
     Raises:
         FileNotFoundError: If model file does not exist.
         RuntimeError: If checkpoint format is unrecognized.
     """
-    path = model_path or DEFAULT_MODEL_PATH
-
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Model file not found: {path}")
-
-    state = torch.load(path, map_location=DEVICE, weights_only=True)
-
-    if not isinstance(state, dict):
-        raise RuntimeError(
-            f"Expected a state_dict (dict), got {type(state)}. "
-            "Full-model pickle loading is disabled for security."
-        )
-
     cfg = load_model_config()
-    model = XRayClassifier(num_classes=NUM_CLASSES, freeze_backbone=False, pretrained=False,
-                           arch=cfg.get("arch", "resnet18"))
-    model.load_state_dict(state)
+    if model_path:
+        specs = [{"arch": cfg.get("arch", "resnet18"), "path": model_path}]
+    else:
+        specs = cfg.get("members") or [{"arch": cfg.get("arch", "resnet18"), "path": "xray_model.pth"}]
+
+    members = []
+    for spec in specs:
+        path = spec["path"] if os.path.isabs(spec["path"]) else os.path.join(_REPO_ROOT, spec["path"])
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Model file not found: {path}")
+        state = torch.load(path, map_location=DEVICE, weights_only=True)
+        if not isinstance(state, dict):
+            raise RuntimeError(
+                f"Expected a state_dict (dict), got {type(state)}. "
+                "Full-model pickle loading is disabled for security."
+            )
+        m = XRayClassifier(num_classes=NUM_CLASSES, freeze_backbone=False, pretrained=False, arch=spec["arch"])
+        m.load_state_dict(state)
+        members.append(m)
+
+    model = members[0] if len(members) == 1 else EnsembleModel(members)
     model.to(DEVICE)
     model.eval()
     return model

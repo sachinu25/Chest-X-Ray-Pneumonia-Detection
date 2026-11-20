@@ -71,7 +71,7 @@ async def lifespan(app: FastAPI):
     app.state.model = None
 
     try:
-        app.state.model = load_model(DEFAULT_MODEL_PATH)
+        app.state.model = load_model()  # ensemble per model_config.json
         app.state.ready = True
         logger.info(f"Model loaded successfully on {DEVICE}")
     except FileNotFoundError:

@@ -40,7 +40,12 @@ def load_images(args):
     if args.parquet:
         import pyarrow.parquet as pq
         t = pq.read_table(args.parquet)
+        keep = None
+        if args.split:
+            keep = set(json.loads(Path(args.split).read_text())[args.subset])
         for img, label in zip(t.column("image").to_pylist(), t.column("label").to_pylist()):
+            if keep is not None and img.get("path") not in keep:
+                continue
             yield Image.open(io.BytesIO(img["bytes"])), int(label)
     else:
         for label, cls in PREDICTION_LABEL.items():
@@ -64,6 +69,8 @@ def main():
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--parquet")
     g.add_argument("--data-dir")
+    ap.add_argument("--split", help="reports/test_split.json: evaluate only one subset of the test set")
+    ap.add_argument("--subset", default="holdout", choices=["holdout", "calibration"])
     args = ap.parse_args()
 
     from sklearn.metrics import (average_precision_score, brier_score_loss, classification_report,
@@ -85,7 +92,9 @@ def main():
     cm = confusion_matrix(y, pred)
     result = {
         "generated": date.today().isoformat(),
-        "test_set": "Kermany et al. chest X-ray test split",
+        "test_set": "Kermany et al. chest X-ray test split" + (
+            f" — {args.subset} subset ({args.split})" if args.split else ""),
+        "subset": args.subset if args.split else "full",
         "n_images": int(len(y)), "n_normal": int((y == 0).sum()), "n_pneumonia": int((y == 1).sum()),
         "accuracy": round(rep["accuracy"], 4),
         "macro_f1": round(rep["macro avg"]["f1-score"], 4),
