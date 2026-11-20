@@ -19,4 +19,4 @@ python-multipart==0.0.19
 
 # Pipeline utilities
 joblib==1.4.2
-tqdm==4.67.1
+tqdm==4.66.5  # must exist on the PyTorch CPU index too (uv checks that index first)
