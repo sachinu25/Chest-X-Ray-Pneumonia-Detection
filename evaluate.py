@@ -62,7 +62,7 @@ def load_model():
         )
 
     print("[INFO] Detected XRayClassifier checkpoint")
-    model = XRayClassifier(num_classes=NUM_CLASSES)
+    model = XRayClassifier(num_classes=NUM_CLASSES, pretrained=False)
     model.load_state_dict(state)
     model.to(DEVICE)
     model.eval()

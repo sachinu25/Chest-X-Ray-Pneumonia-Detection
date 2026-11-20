@@ -80,7 +80,7 @@ def load_model(model_path: str | None = None) -> XRayClassifier:
             "Full-model pickle loading is disabled for security."
         )
 
-    model = XRayClassifier(num_classes=NUM_CLASSES, freeze_backbone=False)
+    model = XRayClassifier(num_classes=NUM_CLASSES, freeze_backbone=False, pretrained=False)
     model.load_state_dict(state)
     model.to(DEVICE)
     model.eval()

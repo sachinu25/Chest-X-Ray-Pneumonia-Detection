@@ -34,6 +34,8 @@ from utils.model_utils import (
 from utils.gradcam import GradCAMGenerator, create_gradcam_overlay
 from utils.pdf_report import generate_pdf_report
 from utils.logger import get_logger
+import json
+import pandas as pd
 
 logger = get_logger("streamlit_app")
 
@@ -59,6 +61,16 @@ if CSS_PATH.exists():
 # ---------------------------------------------------------------------------
 # Cached Model Loading
 # ---------------------------------------------------------------------------
+@st.cache_data(show_spinner=False)
+def load_evaluation():
+    """Verified test-set metrics written by scripts/evaluate_model.py (None if missing)."""
+    path = Path(__file__).parent / "reports" / "evaluation.json"
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
 @st.cache_resource(show_spinner=False)
 def get_model():
     """Load and cache the trained model."""
@@ -214,28 +226,32 @@ if page == "🏠 Overview":
     )
 
     custom_divider()
-    section_header("📊", "Model Performance Metrics")
+    ev = load_evaluation()
+    section_header("📊", "Model Performance (verified on 624 held-out test images)")
 
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        metric_card("🎯", "Test Accuracy", "92.79%", "accuracy")
-    with col2:
-        metric_card("📏", "Macro F1 Score", "0.9197", "f1")
-    with col3:
-        metric_card("📈", "ROC-AUC", "0.9923", "roc")
-    with col4:
-        metric_card("🧠", "Architecture", "ResNet-18", "dataset")
+    if ev is None:
+        st.warning("reports/evaluation.json not found — run `python scripts/evaluate_model.py` to generate it.")
+    else:
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            metric_card("🎯", "Test Accuracy", f"{ev['accuracy']:.1%}", "accuracy")
+        with col2:
+            metric_card("📏", "Macro F1 Score", f"{ev['macro_f1']:.3f}", "f1")
+        with col3:
+            metric_card("📈", "ROC-AUC", f"{ev['roc_auc']:.3f}", "roc")
+        with col4:
+            metric_card("🩺", "Pneumonia Recall", f"{ev['per_class']['PNEUMONIA']['recall']:.1%}", "dataset")
 
     custom_divider()
     section_header("📋", "Dataset Summary")
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        metric_card("📁", "Total Images", "5,232", "dataset")
+        metric_card("📁", "Training Images", "5,232", "dataset")
     with col2:
-        metric_card("🟢", "Normal Images", "1,349", "accuracy")
+        metric_card("🟢", "Normal (train)", "1,349", "accuracy")
     with col3:
-        metric_card("🔴", "Pneumonia Images", "3,883", "f1")
+        metric_card("🔴", "Pneumonia (train)", "3,883", "f1")
 
     custom_divider()
     section_header("⚙️", "Training Configuration")
@@ -246,11 +262,11 @@ if page == "🏠 Overview":
             """
             <div class="info-box">
                 <strong>Training Details</strong><br>
-                • <strong>Backbone:</strong> ResNet-18 (ImageNet pretrained)<br>
-                • <strong>Epochs:</strong> 25 (with early stopping)<br>
-                • <strong>Optimizer:</strong> Adam (lr=0.0003, wd=1e-4)<br>
-                • <strong>Scheduler:</strong> StepLR (step=7, γ=0.5)<br>
-                • <strong>Loss:</strong> Weighted CrossEntropy
+                • <strong>Backbone:</strong> ResNet-18 (ImageNet pretrained), frozen for the first 3 epochs<br>
+                • <strong>Epochs:</strong> up to 25 (with early stopping)<br>
+                • <strong>Optimizer:</strong> AdamW (lr=0.0003, wd=1e-4)<br>
+                • <strong>Scheduler:</strong> CosineAnnealingWarmRestarts (T₀=5, T_mult=2)<br>
+                • <strong>Loss:</strong> Class-weighted CrossEntropy (3:1 imbalance)
             </div>
             """,
             unsafe_allow_html=True,
@@ -260,76 +276,44 @@ if page == "🏠 Overview":
             """
             <div class="info-box">
                 <strong>Data Augmentation</strong><br>
-                • Random Horizontal Flip<br>
-                • Random Rotation (±15°)<br>
-                • Color Jitter (brightness, contrast, saturation, hue)<br>
-                • Random Affine (translate, scale)<br>
-                • ImageNet Normalization
+                • RandomResizedCrop (scale 0.8–1.0), horizontal flip<br>
+                • Random rotation + affine (translate, scale)<br>
+                • Color jitter, occasional Gaussian blur<br>
+                • RandomErasing (forces global features)<br>
+                • ImageNet normalization
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    custom_divider()
+    if ev is not None:
+        custom_divider()
+        section_header("📊", "Per-Class Performance (threshold 0.5)")
+        rows = []
+        for cls, icon in (("NORMAL", "🟢"), ("PNEUMONIA", "🔴")):
+            m = ev["per_class"][cls]
+            rows.append({"Class": f"{icon} {cls}", "Precision": m["precision"], "Recall": m["recall"],
+                         "F1 Score": m["f1-score"], "Support": m["support"]})
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
-    # Per-class metrics table
-    section_header("📊", "Per-Class Performance")
+        section_header("⚖️", "Sensitivity vs Specificity Trade-off")
+        st.caption("For screening, missing pneumonia is usually worse than a false alarm. Lower thresholds catch "
+                   "more pneumonia at the cost of more false alarms. The Predict page lets you choose the threshold.")
+        ta = pd.DataFrame(ev["threshold_analysis"]).rename(columns={
+            "threshold": "Threshold", "accuracy": "Accuracy",
+            "sensitivity_pneumonia_recall": "Sensitivity (pneumonia)",
+            "specificity_normal_recall": "Specificity (normal)", "precision_pneumonia": "Precision (pneumonia)",
+            "missed_pneumonia_cases": "Missed pneumonia", "false_alarms": "False alarms"})
+        st.dataframe(ta, use_container_width=True, hide_index=True)
 
-    st.markdown(
-        """
-        <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; margin: 0.5rem 0;
-                      background: rgba(26,29,41,0.85); border-radius: 8px; overflow: hidden;">
-            <thead>
-                <tr style="background: rgba(10,126,140,0.15);">
-                    <th style="padding: 0.75rem 1rem; text-align: left; color: #0EA5B5;
-                               font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px;">
-                        Class</th>
-                    <th style="padding: 0.75rem 1rem; text-align: center; color: #0EA5B5;
-                               font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px;">
-                        Precision</th>
-                    <th style="padding: 0.75rem 1rem; text-align: center; color: #0EA5B5;
-                               font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px;">
-                        Recall</th>
-                    <th style="padding: 0.75rem 1rem; text-align: center; color: #0EA5B5;
-                               font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px;">
-                        F1 Score</th>
-                    <th style="padding: 0.75rem 1rem; text-align: center; color: #0EA5B5;
-                               font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px;">
-                        Support</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
-                    <td style="padding: 0.65rem 1rem; color: #00E676; font-weight: 600;">
-                        🟢 NORMAL</td>
-                    <td style="padding: 0.65rem 1rem; text-align: center; color: #E8EAED;">
-                        0.8923</td>
-                    <td style="padding: 0.65rem 1rem; text-align: center; color: #E8EAED;">
-                        0.8846</td>
-                    <td style="padding: 0.65rem 1rem; text-align: center; color: #E8EAED;">
-                        0.8885</td>
-                    <td style="padding: 0.65rem 1rem; text-align: center; color: #9AA0A6;">
-                        234</td>
-                </tr>
-                <tr>
-                    <td style="padding: 0.65rem 1rem; color: #FF1744; font-weight: 600;">
-                        🔴 PNEUMONIA</td>
-                    <td style="padding: 0.65rem 1rem; text-align: center; color: #E8EAED;">
-                        0.9464</td>
-                    <td style="padding: 0.65rem 1rem; text-align: center; color: #E8EAED;">
-                        0.9513</td>
-                    <td style="padding: 0.65rem 1rem; text-align: center; color: #E8EAED;">
-                        0.9488</td>
-                    <td style="padding: 0.65rem 1rem; text-align: center; color: #9AA0A6;">
-                        390</td>
-                </tr>
-            </tbody>
-        </table>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        c1, c2, c3 = st.columns(3)
+        for col, img, cap in ((c1, "confusion_matrix.png", "Confusion matrix"), (c2, "roc_curve.png", "ROC curve"),
+                              (c3, "pr_curve.png", "Precision-recall curve")):
+            path = Path(__file__).parent / "assets" / img
+            if path.exists():
+                col.image(str(path), caption=cap, use_container_width=True)
+        st.caption(f"Evaluated on {ev['n_images']} test images ({ev['n_normal']} normal, {ev['n_pneumonia']} pneumonia) "
+                   f"on {ev['generated']} by scripts/evaluate_model.py.")
 
 
 # -------------------------------------------------------------------
@@ -362,6 +346,14 @@ elif page == "🔬 Predict":
             "in the project root directory."
         )
         st.stop()
+
+    threshold = st.slider(
+        "Pneumonia decision threshold",
+        min_value=0.30, max_value=0.70, value=0.50, step=0.05,
+        help="Predict PNEUMONIA when P(pneumonia) ≥ threshold. Lower = higher sensitivity (fewer missed cases, "
+             "more false alarms). On the test set: 0.5 → 84.6% sensitivity / 85.0% specificity; "
+             "0.4 → 90.5% / 79.5%. See the Overview page for the full table.",
+    )
 
     # File uploader
     uploaded_file = st.file_uploader(
@@ -415,6 +407,10 @@ elif page == "🔬 Predict":
                     # Preprocess & predict
                     tensor = preprocess_image(image)
                     label, confidence, prob_dict = predict(model, tensor)
+                    # Apply the user-selected decision threshold to P(pneumonia)
+                    p_pneu = prob_dict["PNEUMONIA"]
+                    label = "PNEUMONIA" if p_pneu >= threshold else "NORMAL"
+                    confidence = p_pneu if label == "PNEUMONIA" else prob_dict["NORMAL"]
                     risk_level, risk_color = get_risk_level(label, confidence)
 
                     logger.info(

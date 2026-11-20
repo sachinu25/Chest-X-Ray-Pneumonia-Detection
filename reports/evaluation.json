@@ -1,0 +1,108 @@
+{
+  "generated": "2026-11-20",
+  "test_set": "Kermany et al. chest X-ray test split",
+  "n_images": 624,
+  "n_normal": 234,
+  "n_pneumonia": 390,
+  "accuracy": 0.8478,
+  "macro_f1": 0.8407,
+  "roc_auc": 0.9156,
+  "pr_auc_pneumonia": 0.9341,
+  "brier_score": 0.1126,
+  "per_class": {
+    "NORMAL": {
+      "precision": 0.7683,
+      "recall": 0.8504,
+      "f1-score": 0.8073,
+      "support": 234
+    },
+    "PNEUMONIA": {
+      "precision": 0.9041,
+      "recall": 0.8462,
+      "f1-score": 0.8742,
+      "support": 390
+    }
+  },
+  "confusion_matrix": {
+    "labels": [
+      "NORMAL",
+      "PNEUMONIA"
+    ],
+    "rows_actual_cols_predicted": [
+      [
+        199,
+        35
+      ],
+      [
+        60,
+        330
+      ]
+    ]
+  },
+  "threshold_analysis": [
+    {
+      "threshold": 0.3,
+      "accuracy": 0.8542,
+      "sensitivity_pneumonia_recall": 0.9385,
+      "specificity_normal_recall": 0.7137,
+      "precision_pneumonia": 0.8453,
+      "missed_pneumonia_cases": 24,
+      "false_alarms": 67
+    },
+    {
+      "threshold": 0.4,
+      "accuracy": 0.8638,
+      "sensitivity_pneumonia_recall": 0.9051,
+      "specificity_normal_recall": 0.7949,
+      "precision_pneumonia": 0.8803,
+      "missed_pneumonia_cases": 37,
+      "false_alarms": 48
+    },
+    {
+      "threshold": 0.5,
+      "accuracy": 0.8478,
+      "sensitivity_pneumonia_recall": 0.8462,
+      "specificity_normal_recall": 0.8504,
+      "precision_pneumonia": 0.9041,
+      "missed_pneumonia_cases": 60,
+      "false_alarms": 35
+    },
+    {
+      "threshold": 0.6,
+      "accuracy": 0.8333,
+      "sensitivity_pneumonia_recall": 0.7949,
+      "specificity_normal_recall": 0.8974,
+      "precision_pneumonia": 0.9281,
+      "missed_pneumonia_cases": 80,
+      "false_alarms": 24
+    },
+    {
+      "threshold": 0.7,
+      "accuracy": 0.7708,
+      "sensitivity_pneumonia_recall": 0.6897,
+      "specificity_normal_recall": 0.906,
+      "precision_pneumonia": 0.9244,
+      "missed_pneumonia_cases": 121,
+      "false_alarms": 22
+    },
+    {
+      "threshold": 0.8,
+      "accuracy": 0.6971,
+      "sensitivity_pneumonia_recall": 0.5615,
+      "specificity_normal_recall": 0.9231,
+      "precision_pneumonia": 0.9241,
+      "missed_pneumonia_cases": 171,
+      "false_alarms": 18
+    },
+    {
+      "threshold": 0.9,
+      "accuracy": 0.5801,
+      "sensitivity_pneumonia_recall": 0.341,
+      "specificity_normal_recall": 0.9786,
+      "precision_pneumonia": 0.9638,
+      "missed_pneumonia_cases": 257,
+      "false_alarms": 5
+    }
+  ],
+  "note": "The test split is used only for reporting. Threshold rows show the sensitivity/specificity trade-off; the app's default decision threshold stays at 0.5."
+}

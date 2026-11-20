@@ -24,6 +24,9 @@ class XRayClassifier(nn.Module):
         num_classes: Number of output classes (default: 2 for Normal/Pneumonia)
         dropout_rate: Dropout probability for regularization (default: 0.3)
         freeze_backbone: If True, freeze all backbone layers initially (default: False)
+        pretrained: If True, start from ImageNet weights (training). Use False when a
+            trained checkpoint will be loaded right after (inference) — avoids an
+            unnecessary 45 MB download on every cold start.
     """
 
     def __init__(
@@ -31,11 +34,13 @@ class XRayClassifier(nn.Module):
         num_classes: int = 2,
         dropout_rate: float = 0.3,
         freeze_backbone: bool = False,
+        pretrained: bool = True,
     ):
         super().__init__()
 
         # Load pretrained ResNet18 backbone
-        self.backbone = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
+        weights = models.ResNet18_Weights.IMAGENET1K_V1 if pretrained else None
+        self.backbone = models.resnet18(weights=weights)
 
         # Optionally freeze backbone for feature extraction mode
         if freeze_backbone:
