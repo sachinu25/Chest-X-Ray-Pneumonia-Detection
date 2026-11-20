@@ -100,16 +100,35 @@ class ImgDS(torch.utils.data.Dataset):
         return self.tf(x), self.labels[i]
 
 
-TRAIN_TF = T.Compose([
-    T.RandomResizedCrop(224, scale=(0.75, 1.0), ratio=(0.85, 1.15), antialias=True),
-    T.RandomRotation(10),
-    T.RandomHorizontalFlip(),
-    T.ColorJitter(brightness=0.35, contrast=0.35),
-    T.RandomApply([T.GaussianBlur(3, sigma=(0.1, 1.2))], p=0.2),
-    T.ToDtype(torch.float32, scale=True),
-    T.Normalize(MEAN, STD),
-])
-EVAL_TF = T.Compose([T.CenterCrop(224), T.ToDtype(torch.float32, scale=True), T.Normalize(MEAN, STD)])
+class RandomGamma(torch.nn.Module):
+    """Random gamma on a [0, 1] float image — simulates exposure differences between scanners."""
+    def __init__(self, low=0.7, high=1.4, p=0.5):
+        super().__init__(); self.low, self.high, self.p = low, high, p
+
+    def forward(self, x):
+        if torch.rand(1).item() < self.p:
+            g = float(torch.empty(1).uniform_(self.low, self.high))
+            x = x.clamp(0, 1) ** g
+        return x
+
+
+def build_tfs(size: int):
+    train_tf = T.Compose([
+        T.RandomResizedCrop(size, scale=(0.75, 1.0), ratio=(0.85, 1.15), antialias=True),
+        T.RandomRotation(10),
+        T.RandomHorizontalFlip(),
+        T.ColorJitter(brightness=0.35, contrast=0.35),
+        T.RandomApply([T.GaussianBlur(3, sigma=(0.1, 1.2))], p=0.2),
+        T.ToDtype(torch.float32, scale=True),
+        RandomGamma(),
+        T.Normalize(MEAN, STD),
+    ])
+    eval_tf = T.Compose([T.CenterCrop(size), T.ToDtype(torch.float32, scale=True), T.Normalize(MEAN, STD)])
+    return train_tf, eval_tf
+
+
+def short_side(size: int) -> int:
+    return round(size * 256 / 224)
 
 
 # --------------------------------------------------------------------------- metrics
@@ -146,7 +165,7 @@ def best_threshold(y, p):
 
 
 # --------------------------------------------------------------------------- training
-def train_arch(arch, train_dl, val_dl, y_val, epochs, lr):
+def train_arch(arch, train_dl, val_dl, y_val, epochs, lr, ckpt_path=None):
     torch.manual_seed(SEED)
     model = XRayClassifier(arch=arch, pretrained=True).to(DEVICE)
     counts = np.bincount(train_dl.dataset.labels, minlength=2)
@@ -155,7 +174,15 @@ def train_arch(arch, train_dl, val_dl, y_val, epochs, lr):
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=lr, total_steps=epochs * len(train_dl), pct_start=0.15)
     best = {"auc": -1}
-    for ep in range(1, epochs + 1):
+    start = 1
+    if ckpt_path is not None and Path(ckpt_path).exists():
+        # Resume after a crash (the laptop GPU throws sporadic CUDA errors)
+        ck = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+        model.load_state_dict(ck["model"]); opt.load_state_dict(ck["opt"]); sched.load_state_dict(ck["sched"])
+        best, start = ck["best"], ck["epoch"] + 1
+        torch.set_rng_state(ck["rng"])
+        print(f"[{arch}] resumed after epoch {ck['epoch']} (best val_auc {best['auc']:.4f})", flush=True)
+    for ep in range(start, epochs + 1):
         model.train(); t0 = time.time(); tot = 0.0
         for x, y in train_dl:
             x, y = x.to(DEVICE, non_blocking=True), y.to(DEVICE, non_blocking=True)
@@ -180,6 +207,9 @@ def train_arch(arch, train_dl, val_dl, y_val, epochs, lr):
         print(f"[{arch}] epoch {ep:2d} loss {tot / len(train_dl.dataset):.4f} val_auc {auc:.4f} ({time.time() - t0:.0f}s)", flush=True)
         if auc > best["auc"]:
             best = {"auc": auc, "epoch": ep, "state": {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}}
+        if ckpt_path is not None:
+            torch.save({"model": model.state_dict(), "opt": opt.state_dict(), "sched": sched.state_dict(),
+                        "best": best, "epoch": ep, "rng": torch.get_rng_state()}, ckpt_path)
     model.load_state_dict(best["state"])
     return model, best
 
@@ -191,17 +221,19 @@ def main():
     ap.add_argument("--epochs", type=int, default=8)
     ap.add_argument("--lr", type=float, default=2e-4)
     ap.add_argument("--batch", type=int, default=32)
+    ap.add_argument("--size", type=int, default=224, help="crop size (images resized to size*256/224 first)")
     ap.add_argument("--cand-dir", default=str(ROOT.parent / "candidates"))
     ap.add_argument("--select", action="store_true", help="pick the best saved candidate and evaluate on test")
     args = ap.parse_args()
     d = Path(args.data_dir)
     print("device:", DEVICE, torch.cuda.get_device_name(0) if DEVICE.type == "cuda" else "")
 
-    imgs, labels, paths = load_parquets(str(d / "train-*.parquet"))
-    v_imgs, v_labels, v_paths = load_parquets(str(d / "validation-*.parquet"))
+    TRAIN_TF, EVAL_TF = build_tfs(args.size)
+    imgs, labels, paths = load_parquets(str(d / "train-*.parquet"), short_side(args.size))
+    v_imgs, v_labels, v_paths = load_parquets(str(d / "validation-*.parquet"), short_side(args.size))
     imgs += v_imgs; labels = np.concatenate([labels, v_labels]); paths += v_paths
     tr, va = patient_split(labels, paths)
-    t_imgs, t_labels, _ = load_parquets(str(d / "test*.parquet"))
+    t_imgs, t_labels, _ = load_parquets(str(d / "test*.parquet"), short_side(args.size))
     print(f"train {tr.sum()} (pneumonia {labels[tr].sum()}), val {va.sum()} (pneumonia {labels[va].sum()}), test {len(t_labels)}")
 
     mk = lambda idx, tf, shuffle: torch.utils.data.DataLoader(  # noqa: E731
@@ -218,7 +250,8 @@ def main():
         for arch in args.archs:
             if (cand_dir / f"{arch}.json").exists():
                 print(f"[{arch}] candidate exists, skipping"); continue
-            model, best = train_arch(arch, train_dl, val_dl, y_val, args.epochs, args.lr)
+            model, best = train_arch(arch, train_dl, val_dl, y_val, args.epochs, args.lr,
+                                     ckpt_path=cand_dir / f"{arch}_ckpt.pt")
             pv = predict_proba(model, val_dl)
             thr = best_threshold(y_val, pv)
             res = {"best_epoch": best["epoch"], "val": summarize(y_val, pv, thr)}

@@ -134,6 +134,19 @@ Reproduce with `python scripts/evaluate_model.py --parquet <test.parquet>` (writ
 
 **Honest trade-off:** v2 catches almost every pneumonia case (99% recall), but raises more false alarms on normal X-rays. ROC-AUC is essentially unchanged. Validation ROC-AUC is about 0.998 versus 0.918 on test, which shows a real **distribution shift** between the Kermany train and test images. This is the main limit on further gains.
 
+### Experiment: higher resolution, ensemble and target-domain calibration (not shipped)
+
+To test whether accuracy could go further, the test set was split **by patient** into a 30% calibration part (threshold/model choice) and a 70% **untouched holdout** (444 images). See `reports/test_split.json`, `reports/training_v3.json` and `scripts/build_ensemble.py`.
+
+| Model (holdout, 444 images) | Accuracy | ROC-AUC | Pneumonia recall | Specificity |
+|---|---|---|---|---|
+| **v2 ResNet18 @224 (shipped)** | **88.5%** | 0.912 | 98.6% | 71.2% |
+| ResNet18 @320 | 88.5% | 0.923 | 98.6% | 71.2% |
+| EfficientNet-B0 @320 | 84.2% | 0.867 | 96.8% | 62.6% |
+| Ensemble (ResNet18 + EfficientNet-B0 @320) | 88.5% | 0.911 | 99.3% | 69.9% |
+
+**Result:** none of them beat v2 in accuracy, while running 2–3× slower. So v2 stays in production. The ceiling comes from the train/test distribution shift (validation ROC-AUC ≈ 0.998 vs ≈ 0.91–0.92 on test), not from model capacity. Real further gains would need more diverse training data, for example normal X-rays from the test hospital's source.
+
 > **Correction:** earlier versions of this README reported 92.79% accuracy / 0.9923 ROC-AUC. Those numbers could not be reproduced with the committed model on the standard test split.
 
 ---
