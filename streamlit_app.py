@@ -62,8 +62,23 @@ if CSS_PATH.exists():
 # ---------------------------------------------------------------------------
 # Cached Model Loading
 # ---------------------------------------------------------------------------
+def _artifact_version() -> str:
+    """Changes whenever the model, its config or the metrics change, so caches refresh after a redeploy."""
+    root = Path(__file__).parent
+    files = [root / "xray_model.pth", root / "model_config.json", root / "reports" / "evaluation.json"]
+    import hashlib
+    h = hashlib.md5()
+    for f in files:
+        if f.exists():
+            h.update(f.read_bytes() if f.suffix == ".json" else str(f.stat().st_size).encode())
+            if f.suffix == ".pth":
+                with open(f, "rb") as fh:
+                    h.update(fh.read(1 << 20))  # first 1 MB is enough to detect a new checkpoint
+    return h.hexdigest()
+
+
 @st.cache_data(show_spinner=False)
-def load_evaluation():
+def load_evaluation(version: str = ""):
     """Verified test-set metrics written by scripts/evaluate_model.py (None if missing)."""
     path = Path(__file__).parent / "reports" / "evaluation.json"
     try:
@@ -73,7 +88,7 @@ def load_evaluation():
 
 
 @st.cache_resource(show_spinner=False)
-def get_model():
+def get_model(version: str = ""):
     """Load and cache the trained model."""
     try:
         model = load_model()
@@ -173,7 +188,7 @@ with st.sidebar:
     )
 
     # Model status
-    model = get_model()
+    model = get_model(_artifact_version())
     model_status = "✅ Loaded" if model is not None else "❌ Not Found"
     model_color = "#00E676" if model is not None else "#FF1744"
     st.markdown(
@@ -227,7 +242,7 @@ if page == "🏠 Overview":
     )
 
     custom_divider()
-    ev = load_evaluation()
+    ev = load_evaluation(_artifact_version())
     section_header("📊", f"Model Performance (verified on {ev['n_images'] if ev else '—'} untouched test images)")
 
     if ev is None:
