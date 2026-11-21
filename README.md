@@ -113,7 +113,28 @@ Model Deployment
 
 # 🏆 Model Performance
 
-## Current model (v3, target-domain adapted): **93.0% accuracy**
+## Current model (v4, ConvNeXt-Tiny, target-domain adapted): **94.1% accuracy**
+
+Evaluated on the **untouched 444-image holdout** (70% of Kermany test patients, `reports/test_split.json`) with the app's own inference code (`scripts/evaluate_model.py --split reports/test_split.json --subset holdout`):
+
+| Metric (444-image holdout) | v3 ResNet18 | **v4 ConvNeXt-Tiny (current)** |
+|---|---|---|
+| Accuracy | 93.0% | **94.1%** |
+| ROC-AUC | 0.960 | **0.985** |
+| PR-AUC (pneumonia) | 0.964 | **0.990** |
+| Pneumonia recall | **94.7%** | 93.2% |
+| Specificity | 90.2% | **95.7%** |
+| Pneumonia precision | 94.3% | **97.4%** |
+| Macro F1 | 0.925 | **0.938** |
+
+**How v4 was chosen** (`notebooks/colab_bigger_models.ipynb`, run on a Google Colab T4 GPU):
+- DenseNet-121, ConvNeXt-Tiny and EfficientNet-B2 were trained with the v2 recipe, then each was adapted to the test-set source with `scripts/adapt_target.py` (3-fold patient-level CV inside the 180 calibration images).
+- **The winner was picked only by out-of-fold calibration accuracy**: ConvNeXt-Tiny 95.6%, ResNet18 92.8%, DenseNet-121 92.8%, EfficientNet-B2 89.4%. Holdout scores were not used for the choice.
+- Weights are stored in fp16 (56 MB, GitHub limit). Colab (fp32, GPU) measured 93.7% holdout accuracy; the app's CPU/fp16 pipeline measures 94.1%. Both numbers are within the run-to-run variation of a small adaptation set.
+
+### Previous: v3 ResNet18 (target-domain adapted): 93.0% accuracy
+
+
 
 Evaluated on an **untouched holdout of 444 test images** (70% of the Kermany test patients, `reports/test_split.json`).
 Reproduce with `python scripts/evaluate_model.py --parquet <test.parquet> --split reports/test_split.json --subset holdout`.

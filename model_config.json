@@ -1,9 +1,9 @@
 {
-  "arch": "resnet18",
-  "threshold": 0.93,
+  "arch": "convnext_tiny",
+  "threshold": 0.935,
   "tta_hflip": true,
   "preprocess": "equalize",
   "image_size": 224,
   "resize_short_side": 256,
-  "selected_by": "v2 ResNet18 fine-tuned on 180 target-domain calibration images (30% of test patients) for 4 epochs; epochs and threshold chosen by 3-fold patient-level CV on those images; metrics reported on the untouched 70% holdout (444 images)"
+  "selected_by": "ConvNeXt-Tiny (trained on Google Colab T4) fine-tuned on 180 target-domain calibration images (30% of test patients) for 2 epochs; backbone, epochs and threshold chosen by 3-fold patient-level CV on those images (OOF accuracy 95.6%); metrics reported on the untouched 70% holdout (444 images). Weights stored in fp16."
 }

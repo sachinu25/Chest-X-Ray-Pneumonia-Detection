@@ -234,7 +234,7 @@ if page == "🏠 Overview":
             </h1>
             <p style="color: #9AA0A6; font-size: 1rem; max-width: 600px; margin: 0 auto;">
                 AI-powered analysis of chest radiographs for rapid pneumonia screening
-                using deep learning with ResNet-18 transfer learning.
+                using deep learning with ConvNeXt-Tiny transfer learning.
             </p>
         </div>
         """,
@@ -278,12 +278,12 @@ if page == "🏠 Overview":
             """
             <div class="info-box">
                 <strong>Training Details</strong><br>
-                • <strong>Backbone:</strong> ResNet-18 (ImageNet pretrained); beat EfficientNet-B0 on validation<br>
+                • <strong>Backbone:</strong> ConvNeXt-Tiny (ImageNet pretrained); beat ResNet-18, DenseNet-121 and EfficientNet-B2 on calibration CV<br>
                 • <strong>Validation:</strong> 15% of patients held out (no patient leakage)<br>
-                • <strong>Optimizer:</strong> AdamW (lr=2e-4, wd=1e-4), one-cycle LR, bf16, 8 epochs<br>
+                • <strong>Optimizer:</strong> AdamW (lr=2e-4, wd=1e-4), one-cycle LR, 8 epochs (Colab T4 GPU)<br>
                 • <strong>Loss:</strong> Class-weighted CrossEntropy + label smoothing 0.1<br>
-                • <strong>Target-domain adaptation:</strong> fine-tuned on 180 labelled test-source images (4 epochs, 3-fold CV)<br>
-                • <strong>Threshold:</strong> 0.93, chosen by cross-validation on those images
+                • <strong>Target-domain adaptation:</strong> fine-tuned on 180 labelled test-source images (2 epochs, 3-fold CV)<br>
+                • <strong>Threshold:</strong> 0.935, chosen by cross-validation on those images
             </div>
             """,
             unsafe_allow_html=True,
