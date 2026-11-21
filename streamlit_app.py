@@ -65,12 +65,13 @@ if CSS_PATH.exists():
 def _artifact_version() -> str:
     """Changes whenever the model, its config or the metrics change, so caches refresh after a redeploy."""
     root = Path(__file__).parent
-    files = [root / "xray_model.pth", root / "model_config.json", root / "reports" / "evaluation.json"]
+    files = [root / "xray_model.pth", root / "model_config.json", root / "reports" / "evaluation.json",
+             root / "xray" / "ml" / "model" / "arch.py", root / "utils" / "model_utils.py"]
     import hashlib
     h = hashlib.md5()
     for f in files:
         if f.exists():
-            h.update(f.read_bytes() if f.suffix == ".json" else str(f.stat().st_size).encode())
+            h.update(f.read_bytes() if f.suffix in (".json", ".py") else str(f.stat().st_size).encode())
             if f.suffix == ".pth":
                 with open(f, "rb") as fh:
                     h.update(fh.read(1 << 20))  # first 1 MB is enough to detect a new checkpoint
@@ -91,7 +92,14 @@ def load_evaluation(version: str = ""):
 def get_model(version: str = ""):
     """Load and cache the trained model."""
     try:
-        model = load_model()
+        # Streamlit Cloud hot-reloads this script on push but keeps already-imported
+        # modules; reload the model code so a new architecture is picked up too.
+        import importlib
+        import xray.ml.model.arch as _arch
+        import utils.model_utils as _mu
+        importlib.reload(_arch)
+        importlib.reload(_mu)
+        model = _mu.load_model()
         logger.info(f"Model loaded successfully on {DEVICE}")
         return model
     except FileNotFoundError as e:
