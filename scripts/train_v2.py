@@ -44,7 +44,8 @@ from xray.ml.model.arch import XRayClassifier  # noqa: E402
 SEED = 42
 MEAN, STD = [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-AMP = dict(device_type=DEVICE.type, dtype=torch.bfloat16, enabled=DEVICE.type == "cuda")  # bf16: no fp16 overflow/NaN
+AMP = dict(device_type=DEVICE.type, dtype=torch.bfloat16,
+           enabled=DEVICE.type == "cuda" and torch.cuda.get_device_capability()[0] >= 8)  # native bf16 (Ampere+); T4 -> fp32
 
 
 # --------------------------------------------------------------------------- data
